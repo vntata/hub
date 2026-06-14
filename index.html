@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="icon.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Nag's Hub</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
@@ -1136,7 +1137,7 @@ async function loadCalendar(){
     const data=await res.json();
     if(data.error)throw new Error(data.error);
     const now=new Date(),mon=new Date(now);
-    mon.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1));mon.setHours(0,0,0,0);
+    mon.setDate(now.getDate()-now.getDay());mon.setHours(0,0,0,0);
     renderCalendar(data.events||[],mon);
   }catch(e){
     el.innerHTML=`<div class="cal-summary"><div class="cal-summary-title"><i class="ti ti-calendar-off"></i> Calendar not connected</div><div class="cal-summary-text">Set up the Apps Script calendar webhook to see your week here.</div></div>`;
@@ -1144,7 +1145,7 @@ async function loadCalendar(){
 }
 function renderCalendar(events,monday){
   const el=document.getElementById('cal-content');
-  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],today=new Date();today.setHours(0,0,0,0);
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],today=new Date();today.setHours(0,0,0,0);
   const byDay=Array.from({length:7},()=>[]);
   events.forEach(ev=>{const start=new Date(ev.start),idx=Math.floor((start-monday)/86400000);if(idx>=0&&idx<7)byDay[idx].push(ev);});
   const summaryLines=[];let hasBday=false,hasTravel=false;
