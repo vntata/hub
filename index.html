@@ -633,10 +633,19 @@ function showScreen(id){
 window.showScreen=showScreen;
 function goTo(screen){
   showScreen(screen);
-  if(screen==='workout'){buildDayBar();renderDay();loadWorkoutEntry();}
+  if(screen==='workout'){
+    // On Sunday (DOW=0, rest day) reset all state for the new week
+    if(DOW===0){
+      Object.keys(wChecked).forEach(k=>delete wChecked[k]);
+      Object.keys(wCardio).forEach(k=>delete wCardio[k]);
+    }
+    wActiveDay=DOW;
+    buildDayBar();renderDay();loadWorkoutEntry();
+  }
   if(screen==='biotrack'){bioOffset=0;updateBioDate();loadBioEntry();}
   if(screen==='priorities'){buildCityBar();loadWeather(0);loadCalendar();}
   if(screen==='analyses'){loadAnalyses();}
+  if(screen==='travel'){renderTravelLanding();}
   if(screen==='games'){renderGamesHub();}
 }
 // ── DATA EXPORT ───────────────────────────────────────────────
@@ -2370,7 +2379,7 @@ function renderGamesHub(){
           <div style="font-size:15px;font-weight:600;color:#1a1a1a">Wordle</div>
           <div style="font-size:12px;color:#888;margin-top:4px">6 guesses · 5 letters · timed</div>
         </div>
-        <div onclick="startSudoku(null)" style="padding:24px 14px;text-align:center;cursor:pointer;background:#f3f2fe">
+        <div onclick="showSudokuDiffModal(null)" style="padding:24px 14px;text-align:center;cursor:pointer;background:#f3f2fe">
           <i class="ti ti-grid-3x3" style="font-size:32px;color:#534AB7;display:block;margin-bottom:10px"></i>
           <div style="font-size:15px;font-weight:600;color:#1a1a1a">Sudoku</div>
           <div style="font-size:12px;color:#888;margin-top:4px">Easy / Medium / Hard · timed</div>
@@ -2492,7 +2501,6 @@ function wKey(k){
   if(k==='⌫'||k==='BACK'){wGame.current=wGame.current.slice(0,-1);}
   else if(k==='ENT'||k==='ENTER'){
     if(wGame.current.length!==5)return;
-    if(!WORDLE_WORDS.includes(wGame.current.toLowerCase()))return;
     wGame.guesses.push(wGame.current);
     if(wGame.current===wGame.word||wGame.guesses.length===6){wGame.done=true;wStopTimer();}
     wGame.current='';
