@@ -882,8 +882,8 @@ const ACTIVITIES=['Walking','Running','Hiking','Swimming','Biking','Elliptical',
 const wChecked={},wCardio={};
 let wActiveDay=DOW,wSaving=false;
 
-function getMonday(){const d=new Date(TODAY),diff=d.getDate()-d.getDay()+(d.getDay()===0?-6:1);d.setDate(diff);return d;}
-function getWorkoutDateStr(){const mon=getMonday(),d=new Date(mon);d.setDate(mon.getDate()+(wActiveDay===0?6:wActiveDay-1));return d.toISOString().split('T')[0];}
+function getMonday(){const d=new Date(TODAY);d.setDate(d.getDate()-d.getDay());return d;}
+function getWorkoutDateStr(){const mon=getMonday(),d=new Date(mon);d.setDate(mon.getDate()+wActiveDay);return d.toISOString().split('T')[0];}
 
 function buildDayBar(){
   const bar=document.getElementById('day-bar');if(!bar)return;
