@@ -641,7 +641,7 @@ function goTo(screen){
       Object.keys(wCardio).forEach(k=>delete wCardio[k]);
     }
     wActiveDay=DOW;
-    buildDayBar();renderDay();loadWorkoutEntry();
+    buildDayBar();loadWorkoutEntry();
   }
   if(screen==='biotrack'){bioOffset=0;updateBioDate();loadBioEntry();}
   if(screen==='priorities'){buildCityBar();loadWeather(0);loadCalendar();}
@@ -898,7 +898,7 @@ function buildDayBar(){
     if(i===wActiveDay)cls+=' active';else if(i<DOW)cls+=' past';
     if(d.rest)cls+=' rest';
     btn.className=cls;btn.textContent=d.short;
-    btn.onclick=()=>{wActiveDay=i;buildDayBar();renderDay();loadWorkoutEntry();};
+    btn.onclick=()=>{wActiveDay=i;buildDayBar();loadWorkoutEntry();};
     bar.appendChild(btn);
   });
 }
