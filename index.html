@@ -913,7 +913,7 @@ async function loadWorkoutEntry(){
     if(snap.exists()){
       const data=snap.data();
       wCardio[wActiveDay]={act:data.cardioType||'',mins:data.durationMins||''};
-      if(data.checkedExercises)wChecked[wActiveDay]=data.checkedExercises;
+      if(data.checkedExercises)wChecked[wActiveDay]=Object.fromEntries(Object.entries(data.checkedExercises).map(([k,v])=>[Number(k),v]));
     }else{if(!wCardio[wActiveDay])wCardio[wActiveDay]={act:'',mins:''};}
     renderDay();
   }catch(e){console.log('Workout load:',e);}
@@ -997,7 +997,7 @@ async function saveWorkoutLog(){
   const docKey=window._auth.currentUser.uid+'_'+dateStr+'_day'+wActiveDay;
   const data={date:dateStr,day:d.label,theme:d.theme,cardioType:cardio.act,durationMins:cardio.mins,checkedExercises:wChecked[wActiveDay]||{},userId:window._auth.currentUser.uid,updatedAt:new Date().toISOString()};
   try{
-    await window._setDoc(window._doc(window._db,'workoutLog',docKey),data,{merge:true});
+    await window._setDoc(window._doc(window._db,'workoutLog',docKey),data);
     await pushToSheets('Workout Log',[dateStr,d.label,d.theme,cardio.act,cardio.mins]);
     showToast('Workout saved \u2713',true);
   }catch(e){showToast('Error saving \u2014 check connection');}
