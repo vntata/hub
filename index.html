@@ -787,6 +787,9 @@ async function saveSettings(){
 }
 window.saveSettings=saveSettings;
 
+// ── DATE HELPER ───────────────────────────────────────────────────
+function toLocalDateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+
 // ── WORKOUT DATA ──────────────────────────────────────────────────
 const TODAY=new Date(),DOW=TODAY.getDay();
 const DAYS=[
@@ -882,8 +885,8 @@ const ACTIVITIES=['Walking','Running','Hiking','Swimming','Biking','Elliptical',
 const wChecked={},wCardio={};
 let wActiveDay=DOW,wSaving=false;
 
-function getMonday(){const d=new Date(TODAY);d.setDate(d.getDate()-d.getDay());return d;}
-function getWorkoutDateStr(){const mon=getMonday(),d=new Date(mon);d.setDate(mon.getDate()+wActiveDay);return d.toISOString().split('T')[0];}
+function getMonday(){const d=new Date(TODAY),diff=d.getDate()-d.getDay()+(d.getDay()===0?-6:1);d.setDate(diff);return d;}
+function getWorkoutDateStr(){const mon=getMonday(),d=new Date(mon);d.setDate(mon.getDate()+(wActiveDay===0?-1:wActiveDay-1));return toLocalDateStr(d);}
 
 function buildDayBar(){
   const bar=document.getElementById('day-bar');if(!bar)return;
@@ -1022,7 +1025,7 @@ window.changeDay=changeDay;window.resetBioToday=resetBioToday;
 
 async function loadBioEntry(){
   if(!window._db||!window._auth.currentUser)return;
-  const dateStr=getBioDate().toISOString().split('T')[0];
+  const dateStr=toLocalDateStr(getBioDate());
   ['bio-weight','bio-bp','meal-breakfast','meal-midmorn','meal-lunch','meal-midaft','meal-dinner','meal-eve','bio-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   bpTime=null;document.querySelectorAll('.bp-time-btn').forEach(b=>b.classList.remove('sel'));
   ['bmi-val','trend-val','gap-val'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='\u2014';});
@@ -1060,7 +1063,7 @@ async function saveBioEntry(){
   if(bioSaving)return;if(!window._db||!window._auth.currentUser)return;
   bioSaving=true;const btn=document.getElementById('bio-save-btn');
   if(btn){btn.textContent='Saving...';btn.style.opacity='0.7';}
-  const d=getBioDate(),dateStr=d.toISOString().split('T')[0],dayName=d.toLocaleDateString('en-US',{weekday:'long'});
+  const d=getBioDate(),dateStr=toLocalDateStr(d),dayName=d.toLocaleDateString('en-US',{weekday:'long'});
   const weight=document.getElementById('bio-weight')?.value||'';
   const bmi=weight?((parseFloat(weight)/(HEIGHT_IN*HEIGHT_IN))*703).toFixed(1):'';
   const bp=document.getElementById('bio-bp')?.value||'';
@@ -2419,14 +2422,14 @@ function renderWordle(){
   const c=document.getElementById('games-content');
   const m=Math.floor(wGame.elapsed/60),s=wGame.elapsed%60;
   const timerStr=(m?m+':':'0:')+String(s).padStart(2,'0');
-  let html=`<div style="background:#EAF3DE;min-height:calc(100vh - 56px);padding:12px 10px">`;
-  // Header
-  html+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-    <span style="font-size:22px;font-weight:700;color:#27500A;letter-spacing:.04em">WORDLE</span>
-    <span id="w-timer" style="font-size:13px;background:white;color:#3B6D11;padding:4px 12px;border-radius:20px;border:1.5px solid #97C459;font-weight:600"><i class="ti ti-clock" style="font-size:12px;vertical-align:-1px"></i> ${timerStr}</span>
+  let html=`<div style="background:#EAF3DE;min-height:calc(100vh - 56px);padding:14px">`;
+  // Header row inside body
+  html+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <span style="font-size:13px;font-weight:600;color:#3B6D11">Wordle</span>
+    <span id="w-timer" style="font-size:12px;background:white;color:#3B6D11;padding:3px 10px;border-radius:8px;border:1px solid #C0DD97;font-weight:500">${timerStr}</span>
   </div>`;
   // 6x5 grid
-  html+=`<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:10px">`;
+  html+=`<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px">`;
   for(let r=0;r<6;r++){
     let letters=r<wGame.guesses.length?wGame.guesses[r].split(''):r===wGame.guesses.length?wGame.current.split(''):[];
     for(let c2=0;c2<5;c2++){
@@ -2438,69 +2441,43 @@ function renderWordle(){
         if(result[c2]==='G'){bg='#639922';border='2px solid #639922';color='white';}
         else if(result[c2]==='Y'){bg='#EF9F27';border='2px solid #EF9F27';color='white';}
         else{bg='#888780';border='2px solid #888780';color='white';}
-      } else if(r===wGame.guesses.length){border='2.5px solid #3B6D11';}
-      html+=`<div style="height:46px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;background:${bg};border:${border};color:${color}">${ch}</div>`;
+      } else if(r===wGame.guesses.length){
+        border='2px solid #3B6D11';
+      }
+      html+=`<div style="aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;background:${bg};border:${border};color:${color}">${ch}</div>`;
     }
   }
   html+=`</div>`;
-  // Keyboard - rows 1 & 2 & 3 (letters only, no ENT/DEL in rows)
-  const rows=[['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['Z','X','C','V','B','N','M']];
+  // Keyboard
+  const rows=[['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['ENT','Z','X','C','V','B','N','M','⌫']];
   const kbState=wGetKeyboardState();
-  html+=`<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:6px">`;
+  html+=`<div style="display:flex;flex-direction:column;gap:4px">`;
   rows.forEach(row=>{
-    html+=`<div style="display:flex;gap:4px;justify-content:center">`;
+    html+=`<div style="display:flex;gap:3px;justify-content:center">`;
     row.forEach(k=>{
       const st=kbState[k]||'';
-      let bg='white',border='1.5px solid #C0DD97',col='#1B2A4A';
-      if(st==='G'){bg='#639922';border='1.5px solid #639922';col='white';}
-      else if(st==='Y'){bg='#EF9F27';border='1.5px solid #EF9F27';col='white';}
-      else if(st==='X'){bg='#B4B2A9';border='1.5px solid #B4B2A9';col='white';}
-      html+=`<div onclick="wKey('${k}')" style="min-width:26px;flex:1;max-width:32px;padding:10px 3px;border-radius:7px;background:${bg};border:${border};color:${col};font-size:14px;font-weight:600;text-align:center;cursor:pointer;user-select:none">${k}</div>`;
+      let bg='white',border='1px solid #C0DD97',col='#1B2A4A';
+      if(st==='G'){bg='#639922';border='1px solid #639922';col='white';}
+      else if(st==='Y'){bg='#EF9F27';border='1px solid #EF9F27';col='white';}
+      else if(st==='X'){bg='#B4B2A9';border='1px solid #B4B2A9';col='white';}
+      const w=k.length>1?'44px':'28px';
+      html+=`<div onclick="wKey('${k}')" style="min-width:${w};padding:8px 3px;border-radius:6px;background:${bg};border:${border};color:${col};font-size:${k.length>1?'10px':'13px'};font-weight:500;text-align:center;cursor:pointer;user-select:none">${k}</div>`;
     });
     html+=`</div>`;
   });
   html+=`</div>`;
-  // 3-button action row
-  html+=`<div style="display:grid;grid-template-columns:1fr 1.5fr 1fr;gap:5px;margin-bottom:10px">
-    <button onclick="wKey('ENT')" style="background:#3B6D11;color:white;border:none;border-radius:8px;padding:12px 4px;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif">ENTER</button>
-    <button onclick="wNewGame()" style="background:#1B2A4A;color:white;border:none;border-radius:8px;padding:12px 4px;font-size:12px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif"><i class="ti ti-refresh" style="font-size:13px;vertical-align:-1px"></i> NEW GAME</button>
-    <button onclick="wKey('⌫')" style="background:#888780;color:white;border:none;border-radius:8px;padding:12px 4px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif">⌫ DEL</button>
-  </div>`;
   // End message
   if(wGame.done){
     const won=wGame.guesses[wGame.guesses.length-1]===wGame.word;
-    html+=`<div style="text-align:center;background:white;border-radius:14px;padding:16px;border:1.5px solid #C0DD97">
-      <div style="font-size:18px;font-weight:700;color:${won?'#27500A':'#A32D2D'};margin-bottom:8px">${won?'🎉 Solved in '+wGame.guesses.length+'!':'Game over — '+wGame.word}</div>
-      <div style="display:flex;gap:8px;justify-content:center;margin-top:4px">
-        <button onclick="startWordle()" style="background:#3B6D11;color:white;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif"><i class="ti ti-refresh" style="font-size:13px;vertical-align:-1px"></i> New game</button>
-        <button onclick="renderGamesHub()" style="background:transparent;border:1.5px solid #C0DD97;border-radius:8px;padding:10px 16px;font-size:13px;color:#3B6D11;cursor:pointer;font-family:Inter,sans-serif">Back</button>
-      </div>
+    html+=`<div style="margin-top:16px;text-align:center;background:white;border-radius:12px;padding:14px">
+      <div style="font-size:16px;font-weight:600;color:${won?'#3B6D11':'#C0392B'};margin-bottom:4px">${won?'🎉 Solved in '+wGame.guesses.length+'!':'Game over — '+wGame.word}</div>
+      <button onclick="startWordle()" style="background:#3B6D11;color:white;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;margin-top:6px">New game</button>
+      <button onclick="renderGamesHub()" style="background:transparent;border:1px solid #C0DD97;border-radius:8px;padding:10px 16px;font-size:13px;color:#3B6D11;cursor:pointer;font-family:Inter,sans-serif;margin-top:6px;margin-left:8px">Back</button>
     </div>`;
   }
   html+=`</div>`;
   c.innerHTML=html;
 }
-
-function wNewGame(){
-  if(!wGame.startTime||wGame.done){startWordle();return;}
-  const c=document.getElementById('games-content');
-  let over=document.getElementById('w-modal-overlay');
-  if(over)over.remove();
-  over=document.createElement('div');
-  over.id='w-modal-overlay';
-  over.style.cssText='position:absolute;inset:0;background:rgba(27,80,11,.45);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;min-height:300px';
-  c.style.position='relative';
-  c.appendChild(over);
-  over.innerHTML=`<div style="background:white;border-radius:16px;padding:20px;width:100%;max-width:300px;text-align:center">
-    <div style="font-size:16px;font-weight:700;color:#1B2A4A;margin-bottom:8px">Start a new game?</div>
-    <div style="font-size:13px;color:#555;margin-bottom:16px">Your current puzzle will be lost.</div>
-    <div style="display:flex;gap:8px;justify-content:center">
-      <button onclick="document.getElementById('w-modal-overlay').remove()" style="flex:1;padding:10px;border-radius:8px;background:#f0f0f0;color:#555;border:none;font-size:13px;font-weight:500;cursor:pointer;font-family:Inter,sans-serif">Cancel</button>
-      <button onclick="document.getElementById('w-modal-overlay').remove();startWordle()" style="flex:1;padding:10px;border-radius:8px;background:#3B6D11;color:white;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">New game</button>
-    </div>
-  </div>`;
-}
-window.wNewGame=wNewGame;
 
 function wScoreGuess(guess,word){
   const result=Array(5).fill('X');
@@ -2607,19 +2584,19 @@ function renderSudoku(){
   const c=document.getElementById('games-content');
   const m=Math.floor(sudGame.elapsed/60),s=sudGame.elapsed%60;
   const timerStr=(m?m+':':'0:')+String(s).padStart(2,'0');
-  let html=`<div id="sudoku-wrap" style="background:#EEEDFE;min-height:calc(100vh - 56px);padding:12px 10px">`;
+  let html=`<div id="sudoku-wrap" style="background:#EEEDFE;min-height:calc(100vh - 56px);padding:12px">`;
   // Header
   html+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-    <span style="font-size:22px;font-weight:700;color:#26215C;letter-spacing:.04em">SUDOKU</span>
+    <span style="font-size:13px;font-weight:600;color:#534AB7">Sudoku</span>
     <div style="display:flex;gap:8px;align-items:center">
-      <span style="font-size:12px;background:white;color:#3C3489;border:1.5px solid #AFA9EC;padding:3px 10px;border-radius:20px;font-weight:600">${sudGame.difficulty}</span>
-      <span id="sud-timer" style="font-size:13px;background:white;color:#534AB7;padding:4px 12px;border-radius:20px;border:1.5px solid #AFA9EC;font-weight:600"><i class="ti ti-clock" style="font-size:12px;vertical-align:-1px"></i> ${timerStr}</span>
+      <span style="font-size:11px;background:white;color:#3C3489;border:1px solid #AFA9EC;padding:2px 10px;border-radius:8px;font-weight:500">${sudGame.difficulty}</span>
+      <span id="sud-timer" style="font-size:12px;background:white;color:#534AB7;padding:3px 10px;border-radius:8px;border:1px solid #AFA9EC;font-weight:500">${timerStr}</span>
     </div>
   </div>`;
   // Grid
   const sel=sudGame.selected;
   const selR=sel?Math.floor(sel/9):null,selC=sel?sel%9:null;
-  html+=`<div style="display:grid;grid-template-columns:repeat(9,1fr);gap:1.5px;background:#534AB7;border:3px solid #534AB7;border-radius:8px;overflow:hidden;margin-bottom:10px">`;
+  html+=`<div style="display:grid;grid-template-columns:repeat(9,1fr);gap:1.5px;background:#534AB7;border:2.5px solid #534AB7;border-radius:8px;overflow:hidden;margin-bottom:10px">`;
   for(let r=0;r<9;r++){
     for(let cc=0;cc<9;cc++){
       const idx=r*9+cc;
@@ -2631,25 +2608,25 @@ function renderSudoku(){
       let bg=isGiven?'#DFE0FA':'white';
       if(isSel)bg='#AFA9EC';
       else if(isHighlightRow||isHighlightCol)bg=isGiven?'#D0D2F0':'#EEEDFE';
-      const borderR=isBR?'border-right:3px solid #534AB7':'';
-      const borderB=isBB?'border-bottom:3px solid #534AB7':'';
+      const borderR=isBR?'border-right:2.5px solid #534AB7':'';
+      const borderB=isBB?'border-bottom:2.5px solid #534AB7':'';
       const textCol=isGiven?'#26215C':val?'#534AB7':'transparent';
       const conflict=val&&sudGame.solution[r][cc]!==val;
       const col=conflict?'#C0392B':textCol;
-      html+=`<div onclick="sudSelect(${idx})" style="background:${bg};display:flex;align-items:center;justify-content:center;aspect-ratio:1;font-size:16px;font-weight:700;color:${col};cursor:pointer;${borderR};${borderB}">${val||''}</div>`;
+      html+=`<div onclick="sudSelect(${idx})" style="background:${bg};display:flex;align-items:center;justify-content:center;aspect-ratio:1;font-size:15px;font-weight:600;color:${col};cursor:pointer;${borderR};${borderB}">${val||''}</div>`;
     }
   }
   html+=`</div>`;
   // Numpad
-  html+=`<div style="display:grid;grid-template-columns:repeat(9,1fr);gap:5px;margin-bottom:10px">`;
-  for(let n=1;n<=9;n++)html+=`<div onclick="sudNum(${n})" style="background:white;border-radius:8px;padding:10px 2px;text-align:center;font-size:18px;color:#534AB7;font-weight:700;border:1.5px solid #AFA9EC;cursor:pointer">${n}</div>`;
+  html+=`<div style="display:grid;grid-template-columns:repeat(9,1fr);gap:5px;margin-bottom:12px">`;
+  for(let n=1;n<=9;n++)html+=`<div onclick="sudNum(${n})" style="background:white;border-radius:7px;padding:9px 2px;text-align:center;font-size:17px;color:#534AB7;font-weight:600;border:1px solid #AFA9EC;cursor:pointer">${n}</div>`;
   html+=`</div>`;
   // Actions
   html+=`<div style="display:flex;gap:8px">
-    <button onclick="sudNewGame()" style="flex:1;padding:12px;background:#534AB7;color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif"><i class="ti ti-refresh" style="font-size:13px;vertical-align:-1px"></i> New game</button>
-    <button onclick="sudErase()" style="flex:1;padding:12px;background:white;color:#534AB7;border:1.5px solid #AFA9EC;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif"><i class="ti ti-eraser" style="font-size:13px;vertical-align:-1px"></i> Erase</button>
+    <button onclick="sudNewGame()" style="flex:1;padding:11px;background:#534AB7;color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif"><i class="ti ti-refresh" style="font-size:13px;vertical-align:-1px"></i> New game</button>
+    <button onclick="sudErase()" style="flex:1;padding:11px;background:white;color:#534AB7;border:1px solid #AFA9EC;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif"><i class="ti ti-eraser" style="font-size:13px;vertical-align:-1px"></i> Erase</button>
   </div>`;
-  if(sudGame.done)html+=`<div style="margin-top:14px;text-align:center;background:white;border-radius:14px;padding:16px;border:1.5px solid #AFA9EC"><div style="font-size:18px;font-weight:700;color:#27500A;margin-bottom:8px">🎉 Solved!</div><button onclick="sudNewGame()" style="background:#534AB7;color:white;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif"><i class="ti ti-refresh" style="font-size:13px;vertical-align:-1px"></i> New game</button></div>`;
+  if(sudGame.done)html+=`<div style="margin-top:14px;text-align:center;background:white;border-radius:12px;padding:14px"><div style="font-size:16px;font-weight:600;color:#3B6D11;margin-bottom:4px">🎉 Solved!</div><button onclick="sudNewGame()" style="background:#534AB7;color:white;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">New game</button></div>`;
   html+=`</div>`;
   c.innerHTML=html;
 }
@@ -2697,12 +2674,7 @@ window.sudNewGame=sudNewGame;
 function showSudokuNewGameModal(){
   const c=document.getElementById('games-content');
   let overlay=document.getElementById('sud-modal-overlay');
-  if(overlay)overlay.remove();
-  overlay=document.createElement('div');
-  overlay.id='sud-modal-overlay';
-  overlay.style.cssText='position:absolute;inset:0;background:rgba(26,16,70,.45);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;min-height:300px';
-  c.style.position='relative';
-  c.appendChild(overlay);
+  if(!overlay){overlay=document.createElement('div');overlay.id='sud-modal-overlay';overlay.style.cssText='position:fixed;inset:0;background:rgba(26,16,70,.45);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px';c.appendChild(overlay);}
   overlay.innerHTML=`<div style="background:white;border-radius:16px;padding:18px;width:100%;max-width:320px">
     <div style="font-size:15px;font-weight:600;color:#1B2A4A;margin-bottom:6px">Start a new game?</div>
     <div style="font-size:13px;color:#555;margin-bottom:14px">Your current puzzle will be lost. Choose a difficulty:</div>
@@ -2719,12 +2691,7 @@ function showSudokuNewGameModal(){
 function showSudokuDiffModal(existingDiff){
   const c=document.getElementById('games-content');
   let overlay=document.getElementById('sud-modal-overlay');
-  if(overlay)overlay.remove();
-  overlay=document.createElement('div');
-  overlay.id='sud-modal-overlay';
-  overlay.style.cssText='position:absolute;inset:0;background:rgba(26,16,70,.45);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;min-height:300px';
-  c.style.position='relative';
-  c.appendChild(overlay);
+  if(!overlay){overlay=document.createElement('div');overlay.id='sud-modal-overlay';overlay.style.cssText='position:fixed;inset:0;background:rgba(26,16,70,.45);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px';c.appendChild(overlay);}
   const cur=existingDiff||sudGame.difficulty||'Medium';
   overlay.innerHTML=`<div style="background:white;border-radius:16px;padding:18px;width:100%;max-width:320px">
     <div style="font-size:15px;font-weight:600;color:#1B2A4A;margin-bottom:14px">Choose difficulty</div>
