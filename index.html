@@ -95,8 +95,11 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .progress-count{font-size:13px;color:#555;font-weight:600;flex-shrink:0;white-space:nowrap;}
 /* section bands */
 .wk-band{border-radius:12px;margin-bottom:10px;overflow:hidden;}
-.wk-band-head{font-size:13px;font-weight:600;padding:11px 14px;display:flex;align-items:center;gap:8px;}
+.wk-band-head{font-size:13px;font-weight:600;padding:11px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;justify-content:space-between;}
+.wk-band-head>span{display:flex;align-items:center;gap:8px;}
 .wk-band-head .ti{font-size:15px;}
+.acc-body{padding:2px 4px 8px;}
+.acc-body-flush{padding:0 8px 8px;}
 .wk-band.warmup{background:#fcf3e3;}
 .wk-band.warmup .wk-band-head{color:#B5651D;}
 .wk-band.optional{background:#efecf9;}
@@ -1059,125 +1062,162 @@ async function loadWorkoutEntry(){
   }catch(e){console.log('Workout load:',e);renderDay();}
 }
 
+// section open/closed state (per render session); exercises open by default
+const wSectionOpen={notes:false,warmup:false,exercises:true,optional:false,cooldown:false};
+const wExpanded={}; // key 's0','s1'... -> bool (exercise card detail open)
+
 function renderDay(){
   const d=DAYS[wActiveDay],el=document.getElementById('day-content');if(!el)return;
   if(!wChecked[wActiveDay])wChecked[wActiveDay]={};
-
-  // support both new (slots) and fallback (exercises/warmup-as-strings) shapes
   const isFallback=!!d.exercises;
 
   if(d.rest){
     el.innerHTML=`<div class="rest-day"><div class="rest-icon"><i class="ti ti-moon"></i></div>
-      <div class="rest-title">${d.label} &#8212; ${d.theme||'Rest Day'}</div>
+      <div class="rest-title">${d.theme||'Rest Day'}</div>
       <div class="rest-text">${d.notes||'Full rest or easy walk only.'}</div>
     </div>${buildCardio()}`;
     return;
   }
 
-  const total=isFallback?d.exercises.length:d.slots.length;
+  const slots=isFallback?d.exercises:d.slots;
+  const total=slots.length;
   const done=getDoneSlots(wActiveDay);
   const pct=total>0?Math.round((done/total)*100):0;
 
+  // HEADER (theme title + notes, no weekday line)
   let html=`<div class="day-header">
     <div class="day-title">${d.theme||d.label}</div>
-    <div class="day-theme-sub">${d.label}</div>
     ${d.notes?`<div class="day-notes">${d.notes}</div>`:''}
     <div class="progress-box"><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     <div class="progress-count">${done}/${total}</div></div>
   </div>`;
 
-  // WARM-UP
+  // NOTES accordion (only if notes present AND it adds beyond header — show full note here)
+  // (header already shows notes; skip a separate Notes section to avoid duplication)
+
+  // WARM-UP accordion -> bullet list
   const warm=isFallback?d.warmup.map(w=>({text:w,link:null})):d.warmup;
   if(warm&&warm.length){
-    html+=`<div class="wk-band warmup"><div class="wk-band-head"><i class="ti ti-flame"></i>Warm up</div>`;
-    warm.forEach((w,i)=>{html+=listRow('w',i,w);});
-    html+=`</div>`;
-  }
-
-  // MAIN SLOTS
-  if(isFallback){
-    d.exercises.forEach((ex,i)=>{html+=fallbackSlot(ex,i);});
-  }else{
-    d.slots.forEach((s,i)=>{html+=slotCard(s,i);});
-  }
-
-  // OPTIONAL (own card, list, no tracking)
-  if(!isFallback&&d.optional&&d.optional.length){
-    html+=`<div class="wk-band optional"><div class="wk-band-head"><i class="ti ti-plus"></i>Optional</div>`;
-    d.optional.forEach(o=>{
-      const meta=[o.role?`<span class="wk-li-role">${o.role}</span>`:'',o.reps].filter(Boolean).join(' \u00b7 ');
-      html+=`<div class="wk-li"><div class="wk-li-body"><div class="wk-li-name">${o.name}</div>
-        ${meta?`<div class="wk-li-meta">${meta}</div>`:''}
-        ${o.desc?`<div class="wk-li-meta">${o.desc}</div>`:''}
-        ${o.link?`<a class="wk-li-link" href="${o.link}" target="_blank"><i class="ti ti-brand-youtube"></i> Watch</a>`:''}
-      </div></div>`;
-    });
-    html+=`</div>`;
-  }else if(isFallback&&d.optional&&d.optional.length){
-    d.optional.forEach(ob=>{
-      html+=`<div class="wk-band optional"><div class="wk-band-head"><i class="ti ti-plus"></i>${ob.title}</div>`;
-      ob.items.forEach(it=>{html+=`<div class="wk-li"><div class="wk-li-body"><div class="wk-li-name">${it}</div></div></div>`;});
+    html+=accHead('warmup','warmup','ti-flame','Warm up');
+    if(wSectionOpen.warmup){
+      html+=`<div class="acc-body">`;
+      warm.forEach(w=>{html+=bulletRow(w);});
       html+=`</div>`;
-    });
+    }
   }
 
-  // COOL-DOWN
+  // EXERCISES accordion -> side-by-side cards, expand for detail
+  html+=accHead('exercises','exercises','ti-barbell','Exercises');
+  if(wSectionOpen.exercises){
+    html+=`<div class="acc-body acc-body-flush">`;
+    slots.forEach((s,i)=>{html+=isFallback?fallbackSlot(s,i):slotCard(s,i);});
+    html+=`</div>`;
+  }
+
+  // OPTIONAL accordion -> bullet list (title stands alone, items are bullets)
+  let optItems=[];
+  if(!isFallback&&d.optional)optItems=d.optional;
+  if(optItems.length){
+    html+=accHead('optional','optional','ti-plus','Optional');
+    if(wSectionOpen.optional){
+      html+=`<div class="acc-body">`;
+      optItems.forEach(o=>{
+        const meta=[o.role?`<span class="wk-li-role">${o.role}</span>`:'',o.reps].filter(Boolean).join(' \u00b7 ');
+        html+=`<div class="wk-li"><div class="wk-li-body">
+          <div class="wk-li-name">&bull; ${o.name}</div>
+          ${meta?`<div class="wk-li-meta">${meta}</div>`:''}
+          ${o.desc?`<div class="wk-li-meta">${o.desc}</div>`:''}
+          ${o.link?`<a class="wk-li-link" href="${o.link}" target="_blank"><i class="ti ti-brand-youtube"></i> Watch</a>`:''}
+        </div></div>`;
+      });
+      html+=`</div>`;
+    }
+  }else if(isFallback&&d.optional&&d.optional.length){
+    html+=accHead('optional','optional','ti-plus','Optional');
+    if(wSectionOpen.optional){
+      html+=`<div class="acc-body">`;
+      d.optional.forEach(ob=>{
+        html+=`<div class="wk-li"><div class="wk-li-body"><div class="wk-li-name" style="font-weight:600">${ob.title}</div></div></div>`;
+        ob.items.forEach(it=>{html+=`<div class="wk-li"><div class="wk-li-body"><div class="wk-li-name">&bull; ${it}</div></div></div>`;});
+      });
+      html+=`</div>`;
+    }
+  }
+
+  // COOL-DOWN accordion -> bullet list
   const cool=isFallback?d.cooldown.map(c=>({text:c,link:null})):d.cooldown;
   if(cool&&cool.length){
-    html+=`<div class="wk-band cooldown"><div class="wk-band-head"><i class="ti ti-wind"></i>Cool down</div>`;
-    cool.forEach((c,i)=>{html+=listRow('c',i,c);});
-    html+=`</div>`;
+    html+=accHead('cooldown','cooldown','ti-wind','Cool down');
+    if(wSectionOpen.cooldown){
+      html+=`<div class="acc-body">`;
+      cool.forEach(c=>{html+=bulletRow(c);});
+      html+=`</div>`;
+    }
   }
 
+  // CARDIO (unchanged, always visible)
   html+=buildCardio();
   el.innerHTML=html;
 }
 
-function listRow(prefix,i,item){
-  const key=prefix+i,done=wChecked[wActiveDay][key];
-  return `<div class="wk-li${done?' done':''}"><div class="wk-li-check" onclick="toggleListItem('${key}')">${done?'<i class="ti ti-check" style="font-size:12px;color:white"></i>':''}</div>
-    <div class="wk-li-body"><div class="wk-li-name">${item.text}</div>
+function accHead(key,band,icon,label){
+  const open=wSectionOpen[key];
+  return `<div class="wk-band ${band}"><div class="wk-band-head" onclick="toggleSection('${key}')">
+    <span><i class="ti ${icon}"></i>${label}</span>
+    <i class="ti ti-chevron-${open?'up':'down'}" style="opacity:0.6"></i>
+  </div>`+(open?'':`</div>`);
+}
+function bulletRow(item){
+  return `<div class="wk-li"><div class="wk-li-body"><div class="wk-li-name">&bull; ${item.text}</div>
     ${item.link?`<a class="wk-li-link" href="${item.link}" target="_blank"><i class="ti ti-brand-youtube"></i> Watch</a>`:''}</div></div>`;
 }
 
 function slotCard(s,i){
-  const key='s'+i,done=wChecked[wActiveDay][key];
-  let h=`<div class="slot-card"><div class="slot-head">
-    <div class="slot-circle${done?' done':''}" onclick="toggleSlot('${key}')">${done?'<i class="ti ti-check" style="font-size:13px;color:white"></i>':''}</div>
-    <div class="slot-num">${i+1} \u00b7 ${s.muscle||''}</div></div>
-    <div class="slot-pair">`;
-  h+=exBox(s.primary,'primary');
-  h+=s.alt?exBox(s.alt,'alternate'):`<div class="ex-box empty">No alternate</div>`;
-  h+=`</div></div>`;
-  return h;
+  const key='s'+i,done=wChecked[wActiveDay][key],open=wExpanded[key];
+  return `<div class="slot-card">
+    <div class="slot-head">
+      <div class="slot-circle${done?' done':''}" onclick="event.stopPropagation();toggleSlot('${key}')">${done?'<i class="ti ti-check" style="font-size:13px;color:white"></i>':''}</div>
+      <div class="slot-num" onclick="toggleExpand('${key}')">${i+1} \u00b7 ${s.muscle||''}</div>
+      <i class="ti ti-chevron-${open?'up':'down'}" style="font-size:14px;color:#bbb;cursor:pointer" onclick="toggleExpand('${key}')"></i>
+    </div>
+    <div class="slot-pair" onclick="toggleExpand('${key}')">
+      ${exBox(s.primary,'primary',open)}
+      ${s.alt?exBox(s.alt,'alternate',open):`<div class="ex-box empty">No alternate</div>`}
+    </div>
+  </div>`;
 }
-function exBox(ex,role){
+function exBox(ex,role,open){
   if(!ex)return `<div class="ex-box empty">\u2014</div>`;
   return `<div class="ex-box ${role}">
     <div class="ex-role">${role==='primary'?'PRIMARY':'ALTERNATE'}</div>
     <div class="ex-nm">${ex.name||''}</div>
     ${ex.equip?`<div class="ex-equip"><span class="eq-box"></span>${ex.equip}</div>`:''}
     ${ex.reps?`<div class="ex-rp">${ex.reps}</div>`:''}
-    ${ex.desc?`<div class="ex-dsc">${ex.desc}</div>`:''}
-    ${ex.link?`<a class="ex-yt" href="${ex.link}" target="_blank"><i class="ti ti-brand-youtube"></i> Watch</a>`:''}
+    ${open&&ex.desc?`<div class="ex-dsc">${ex.desc}</div>`:''}
+    ${open&&ex.link?`<a class="ex-yt" href="${ex.link}" target="_blank" onclick="event.stopPropagation()"><i class="ti ti-brand-youtube"></i> Watch</a>`:''}
   </div>`;
 }
-// fallback render for built-in DAYS shape
 function fallbackSlot(ex,i){
-  const key='s'+i,done=wChecked[wActiveDay][key];
-  return `<div class="slot-card"><div class="slot-head">
-    <div class="slot-circle${done?' done':''}" onclick="toggleSlot('${key}')">${done?'<i class="ti ti-check" style="font-size:13px;color:white"></i>':''}</div>
-    <div class="slot-num">${i+1} \u00b7 ${ex.muscle||''}</div></div>
-    <div class="slot-pair">
-      ${exBox({name:ex.pri,equip:equipTag(ex.pri),reps:ex.reps,desc:ex.desc,link:ex.link},'primary')}
-      ${ex.alt?exBox({name:ex.alt,equip:'',reps:'',desc:'',link:null},'alternate'):'<div class="ex-box empty">No alternate</div>'}
-    </div></div>`;
+  const key='s'+i,done=wChecked[wActiveDay][key],open=wExpanded[key];
+  const pri={name:ex.pri,equip:equipTag(ex.pri),reps:ex.reps,desc:ex.desc,link:ex.link};
+  const alt=ex.alt?{name:ex.alt,equip:'',reps:'',desc:'',link:null}:null;
+  return `<div class="slot-card">
+    <div class="slot-head">
+      <div class="slot-circle${done?' done':''}" onclick="event.stopPropagation();toggleSlot('${key}')">${done?'<i class="ti ti-check" style="font-size:13px;color:white"></i>':''}</div>
+      <div class="slot-num" onclick="toggleExpand('${key}')">${i+1} \u00b7 ${ex.muscle||''}</div>
+      <i class="ti ti-chevron-${open?'up':'down'}" style="font-size:14px;color:#bbb;cursor:pointer" onclick="toggleExpand('${key}')"></i>
+    </div>
+    <div class="slot-pair" onclick="toggleExpand('${key}')">
+      ${exBox(pri,'primary',open)}
+      ${alt?exBox(alt,'alternate',open):'<div class="ex-box empty">No alternate</div>'}
+    </div>
+  </div>`;
 }
 
 function buildCardio(){
   const cardio=wCardio[wActiveDay]||{act:'',mins:'',done:false};
   const opts=ACTIVITIES.map(a=>`<option value="${a}"${cardio.act===a?' selected':''}>${a}</option>`).join('');
-  return `<div class="wk-band cardio"><div class="wk-band-head"><i class="ti ti-run"></i>Cardio</div>
+  return `<div class="wk-band cardio"><div class="wk-band-head" style="cursor:default"><span><i class="ti ti-run"></i>Cardio</span></div>
     <div class="cardio-row">
       <select class="activity-select" id="act-sel" onchange="setCardioAct(this.value)"><option value="">Activity</option>${opts}</select>
       <input class="min-input" id="cardio-mins" type="number" placeholder="min" min="0" value="${cardio.mins||''}" oninput="setCardioMins(this.value)">
@@ -1187,12 +1227,13 @@ function buildCardio(){
   </div>`;
 }
 
+function toggleSection(key){wSectionOpen[key]=!wSectionOpen[key];renderDay();}
+function toggleExpand(key){wExpanded[key]=!wExpanded[key];renderDay();}
 function toggleSlot(key){if(!wChecked[wActiveDay])wChecked[wActiveDay]={};wChecked[wActiveDay][key]=!wChecked[wActiveDay][key];persistChecks();renderDay();}
-function toggleListItem(key){if(!wChecked[wActiveDay])wChecked[wActiveDay]={};wChecked[wActiveDay][key]=!wChecked[wActiveDay][key];persistChecks();renderDay();}
 function toggleCardioDone(){if(!wCardio[wActiveDay])wCardio[wActiveDay]={act:'',mins:'',done:false};wCardio[wActiveDay].done=!wCardio[wActiveDay].done;renderDay();}
 function setCardioAct(v){if(!wCardio[wActiveDay])wCardio[wActiveDay]={act:'',mins:'',done:false};wCardio[wActiveDay].act=v;}
 function setCardioMins(v){if(!wCardio[wActiveDay])wCardio[wActiveDay]={act:'',mins:'',done:false};wCardio[wActiveDay].mins=v;}
-window.toggleSlot=toggleSlot;window.toggleListItem=toggleListItem;window.toggleCardioDone=toggleCardioDone;window.setCardioAct=setCardioAct;window.setCardioMins=setCardioMins;
+window.toggleSection=toggleSection;window.toggleExpand=toggleExpand;window.toggleSlot=toggleSlot;window.toggleCardioDone=toggleCardioDone;window.setCardioAct=setCardioAct;window.setCardioMins=setCardioMins;
 
 // persist checkbox state quietly (per day, within the week)
 async function persistChecks(){
