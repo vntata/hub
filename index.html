@@ -2750,23 +2750,28 @@ function renderWordle(){
     }
   }
   html+=`</div>`;
-  // Keyboard
-  const rows=[['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['ENT','Z','X','C','V','B','N','M','⌫']];
+  // Keyboard — letters only, uniform key size
+  const rows=[['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['Z','X','C','V','B','N','M']];
   const kbState=wGetKeyboardState();
-  html+=`<div style="display:flex;flex-direction:column;gap:4px">`;
+  html+=`<div style="display:flex;flex-direction:column;gap:5px">`;
   rows.forEach(row=>{
-    html+=`<div style="display:flex;gap:3px;justify-content:center">`;
+    html+=`<div style="display:flex;gap:4px;justify-content:center">`;
     row.forEach(k=>{
       const st=kbState[k]||'';
       let bg='white',border='1px solid #C0DD97',col='#1B2A4A';
       if(st==='G'){bg='#639922';border='1px solid #639922';col='white';}
       else if(st==='Y'){bg='#EF9F27';border='1px solid #EF9F27';col='white';}
       else if(st==='X'){bg='#B4B2A9';border='1px solid #B4B2A9';col='white';}
-      const w=k.length>1?'44px':'28px';
-      html+=`<div onclick="wKey('${k}')" style="min-width:${w};padding:8px 3px;border-radius:6px;background:${bg};border:${border};color:${col};font-size:${k.length>1?'10px':'13px'};font-weight:500;text-align:center;cursor:pointer;user-select:none">${k}</div>`;
+      html+=`<div onclick="wKey('${k}')" style="flex:1;max-width:34px;padding:11px 3px;border-radius:6px;background:${bg};border:${border};color:${col};font-size:15px;font-weight:600;text-align:center;cursor:pointer;user-select:none">${k}</div>`;
     });
     html+=`</div>`;
   });
+  // Action row — Enter / New Game / Backspace (large, icon-labelled)
+  html+=`<div style="display:flex;gap:6px;justify-content:center;margin-top:7px">
+    <div onclick="wKey('ENT')" style="flex:1;padding:13px 6px;border-radius:8px;background:#639922;color:white;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;user-select:none"><i class="ti ti-corner-down-left" style="font-size:17px"></i>Enter</div>
+    <div onclick="startWordle()" style="flex:1;padding:13px 6px;border-radius:8px;background:white;color:#3B6D11;border:1px solid #C0DD97;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;user-select:none"><i class="ti ti-refresh" style="font-size:17px"></i>New</div>
+    <div onclick="wKey('⌫')" style="flex:1;padding:13px 6px;border-radius:8px;background:#B4B2A9;color:white;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;user-select:none"><i class="ti ti-backspace" style="font-size:18px"></i></div>
+  </div>`;
   html+=`</div>`;
   // End message
   if(wGame.done){
