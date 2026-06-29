@@ -691,12 +691,13 @@ window.showScreen=showScreen;
 function goTo(screen){
   showScreen(screen);
   if(screen==='workout'){
-    // On Sunday (DOW=0, rest day) reset all check state for the new week
-    if(DOW===0){
+    const curDOW=new Date().getDay();
+    // On Sunday (rest day) reset all check state for the new week
+    if(curDOW===0){
       Object.keys(wChecked).forEach(k=>delete wChecked[k]);
       Object.keys(wCardio).forEach(k=>delete wCardio[k]);
     }
-    wActiveDay=DOW;
+    wActiveDay=curDOW;
     loadRoutineCache().then(()=>{buildDayBar();loadWorkoutEntry();});
   }
   if(screen==='biotrack'){bioOffset=0;updateBioDate();loadBioEntry();}
@@ -946,7 +947,7 @@ let wRoutineSource='built-in';
 const wChecked={},wCardio={};
 let wActiveDay=DOW,wSaving=false;
 
-function getWeekStart(){const d=new Date(TODAY);d.setHours(0,0,0,0);d.setDate(d.getDate()-d.getDay());return d;} // Sunday start
+function getWeekStart(){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-d.getDay());return d;} // Sunday start, always current
 function getWeekKey(){return toLocalDateStr(getWeekStart());}
 function getWorkoutDateStr(){const ws=getWeekStart(),d=new Date(ws);d.setDate(ws.getDate()+wActiveDay);return toLocalDateStr(d);}
 
