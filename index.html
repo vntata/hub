@@ -169,6 +169,13 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .rest-icon{font-size:44px;color:#c8d3e8;margin-bottom:12px;}
 .rest-title{font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:10px;}
 .rest-text{font-size:13px;color:#555;line-height:1.8;text-align:left;background:#f8f9fb;border-radius:12px;padding:14px;}
+/* muscle diagram */
+.muscle-diagram-card{background:#f8f9fb;border:0.5px solid #e0e4ec;border-radius:12px;padding:14px 16px 12px;display:flex;flex-direction:column;align-items:center;margin:12px 0;}
+.muscle-diagram-card svg{width:110px;height:auto;}
+.md-zone{fill:#e0e4ec;transition:fill .3s ease;}
+.md-zone.static{fill:#d3d9e3;}
+.md-zone.active{fill:#1B2A4A;}
+.md-caption{margin-top:8px;font-size:12.5px;color:#777;text-align:center;min-height:16px;}
 /* deploy workout (settings) */
 .deploy-steps{font-size:12px;color:#555;line-height:1.7;background:#f8f9fb;border:0.5px solid #e0e4ec;border-radius:10px;padding:12px 14px;margin-bottom:10px;}
 .deploy-steps b{color:#1B2A4A;}
@@ -1071,6 +1078,77 @@ async function loadWorkoutEntry(){
 const wSectionOpen={notes:false,warmup:false,exercises:true,optional:false,cooldown:false};
 const wExpanded={}; // key 's0','s1'... -> bool (exercise card detail open)
 
+// ── MUSCLE DIAGRAM ───────────────────────────────────────────────
+// Maps a MuscleFocus string (e.g. "Quads \u00b7 Glutes") to diagram zone(s).
+// Reads whatever is already in the MuscleFocus column \u2014 no extra tagging needed.
+function classifyMuscleToken(t){
+  if(/rotator/.test(t))return{zone:'shoulder',back:true};
+  if(/rear.*delt|rear.*shoulder/.test(t))return{zone:'shoulder',back:true};
+  if(/trap/.test(t))return{zone:'shoulder',back:true};
+  if(/shoulder|delt/.test(t))return{zone:'shoulder',back:false};
+  if(/chest/.test(t))return{zone:'torso-upper',back:false};
+  if(/mid.?back|upper.?back/.test(t))return{zone:'torso-upper',back:true};
+  if(/\blats?\b/.test(t))return{zone:'torso-lower',back:true};
+  if(/^back$/.test(t))return{zone:'torso-upper',back:true};
+  if(/tricep|bicep|grip/.test(t))return{zone:'arm',back:false};
+  if(/core|oblique/.test(t))return{zone:'torso-lower',back:false};
+  if(/hamstring/.test(t))return{zone:'quad',back:true};
+  if(/quad/.test(t))return{zone:'quad',back:false};
+  if(/glute/.test(t))return{zone:'hip',back:true};
+  if(/hip/.test(t))return{zone:'hip',back:false};
+  if(/calf|calve|ankle/.test(t))return{zone:'calf',back:false};
+  return null;
+}
+function zonesForMuscle(str){
+  const zones=new Set();let back=false;
+  (str||'').toLowerCase().split(/[\u00b7,]/).map(t=>t.trim()).filter(Boolean).forEach(t=>{
+    const c=classifyMuscleToken(t);
+    if(c){zones.add(c.zone);if(c.back)back=true;}
+  });
+  return{zones:[...zones],back};
+}
+function muscleDiagramHTML(){
+  return `<div class="muscle-diagram-card">
+    <svg viewBox="0 0 220 460" xmlns="http://www.w3.org/2000/svg">
+      <circle class="md-zone static" cx="110" cy="34" r="23"/>
+      <rect class="md-zone static" x="100" y="53" width="20" height="16" rx="5"/>
+      <ellipse class="md-zone" data-zone="shoulder" cx="66" cy="90" rx="21" ry="16"/>
+      <ellipse class="md-zone" data-zone="shoulder" cx="154" cy="90" rx="21" ry="16"/>
+      <rect class="md-zone" data-zone="torso-upper" x="75" y="80" width="70" height="46" rx="15"/>
+      <rect class="md-zone" data-zone="torso-lower" x="84" y="128" width="52" height="52" rx="10"/>
+      <rect class="md-zone" data-zone="arm" x="38" y="97" width="23" height="70" rx="10"/>
+      <rect class="md-zone" data-zone="arm" x="159" y="97" width="23" height="70" rx="10"/>
+      <rect class="md-zone static" x="37" y="168" width="21" height="58" rx="9"/>
+      <rect class="md-zone static" x="162" y="168" width="21" height="58" rx="9"/>
+      <rect class="md-zone" data-zone="hip" x="80" y="182" width="60" height="30" rx="10"/>
+      <rect class="md-zone" data-zone="quad" x="78" y="212" width="28" height="92" rx="12"/>
+      <rect class="md-zone" data-zone="quad" x="114" y="212" width="28" height="92" rx="12"/>
+      <rect class="md-zone" data-zone="calf" x="80" y="306" width="24" height="70" rx="10"/>
+      <rect class="md-zone" data-zone="calf" x="116" y="306" width="24" height="70" rx="10"/>
+      <line id="md-spine" x1="110" y1="72" x2="110" y2="178" stroke="#c7cdd6" stroke-width="2" stroke-linecap="round" style="display:none"/>
+    </svg>
+    <div class="md-caption" id="md-caption">Tap an exercise below to see what it trains</div>
+  </div>`;
+}
+function updateMuscleDiagram(slots){
+  const active=new Set();let back=false;const names=[];
+  slots.forEach((s,i)=>{
+    if(wExpanded['s'+i]&&s.muscle){
+      const r=zonesForMuscle(s.muscle);
+      r.zones.forEach(z=>active.add(z));
+      if(r.back)back=true;
+      names.push(s.muscle);
+    }
+  });
+  document.querySelectorAll('.md-zone[data-zone]').forEach(z=>{
+    z.classList.toggle('active',active.has(z.dataset.zone));
+  });
+  const spine=document.getElementById('md-spine');
+  if(spine)spine.style.display=back?'block':'none';
+  const cap=document.getElementById('md-caption');
+  if(cap)cap.textContent=names.length?names.join(' \u00b7 '):'Tap an exercise below to see what it trains';
+}
+
 function renderDay(){
   const d=DAYS[wActiveDay],el=document.getElementById('day-content');if(!el)return;
   if(!wChecked[wActiveDay])wChecked[wActiveDay]={};
@@ -1096,6 +1174,8 @@ function renderDay(){
     <div class="progress-box"><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     <div class="progress-count">${done}/${total}</div></div>
   </div>`;
+
+  html+=muscleDiagramHTML();
 
   // NOTES accordion (only if notes present AND it adds beyond header — show full note here)
   // (header already shows notes; skip a separate Notes section to avoid duplication)
@@ -1163,6 +1243,7 @@ function renderDay(){
   // CARDIO (unchanged, always visible)
   html+=buildCardio();
   el.innerHTML=html;
+  updateMuscleDiagram(slots);
 }
 
 function accHead(key,band,icon,label){
