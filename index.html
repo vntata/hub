@@ -969,7 +969,7 @@ function getWorkoutDateStr(){const ws=getWeekStart(),d=new Date(ws);d.setDate(ws
 // ── ROUTINE PARSER (pasted Google Sheets TSV) ──────────────────────
 const WK_COLS=['Day','Theme','Block','Slot','MuscleFocus','Role','Name','Equipment','Reps','HowTo','YouTube'];
 const WK_BLOCKS=['Notes','WarmUp','Main','Optional','CoolDown'];
-function isYouTube(s){return /youtube\.com|youtu\.be/i.test(s||'');}
+function isLink(s){return /^https?:\/\//i.test((s||'').trim());}
 function equipTag(s){if(!s)return '';const t=s.toLowerCase();if(t.includes('dumbbell'))return 'Dumbbells';if(t.includes('cable'))return 'Cable';if(t.includes('band'))return 'Band';if(t.includes('body')||t.includes('wall')||t.includes('mat')||t.includes('floor'))return 'Bodyweight';if(t.includes('machine')||t.includes('press')||t.includes('cardio'))return 'Machine';return s;}
 
 function parseRoutine(raw){
@@ -1031,9 +1031,9 @@ function parseRoutine(raw){
   return{days};
 }
 function simpleItem(r){const reps=r.Reps?(' \u2014 '+r.Reps):'';return{text:(r.Name||r.MuscleFocus||'')+reps,link:pickLink(r)};}
-function optItem(r){return{role:r.Role||'',name:r.Name||r.MuscleFocus||'',reps:r.Reps||'',desc:r.HowTo&&!isYouTube(r.HowTo)?r.HowTo:'',link:pickLink(r)};}
-function exItem(r){return{name:r.Name||'',equip:equipTag(r.Equipment),reps:r.Reps||'',desc:r.HowTo&&!isYouTube(r.HowTo)?r.HowTo:'',link:pickLink(r)};}
-function pickLink(r){if(isYouTube(r.YouTube))return r.YouTube;if(isYouTube(r.HowTo))return r.HowTo;if(isYouTube(r.Reps))return r.Reps;return null;}
+function optItem(r){return{role:r.Role||'',name:r.Name||r.MuscleFocus||'',reps:r.Reps||'',desc:r.HowTo&&!isLink(r.HowTo)?r.HowTo:'',link:pickLink(r)};}
+function exItem(r){return{name:r.Name||'',equip:equipTag(r.Equipment),reps:r.Reps||'',desc:r.HowTo&&!isLink(r.HowTo)?r.HowTo:'',link:pickLink(r)};}
+function pickLink(r){if(isLink(r.YouTube))return r.YouTube;if(isLink(r.HowTo))return r.HowTo;if(isLink(r.Reps))return r.Reps;return null;}
 
 // ── ROUTINE CACHE (Firestore) ──────────────────────────────────────
 async function loadRoutineCache(){
@@ -1249,7 +1249,7 @@ function renderDay(){
           <div class="wk-li-name">&bull; ${o.name}</div>
           ${meta?`<div class="wk-li-meta">${meta}</div>`:''}
           ${o.desc?`<div class="wk-li-meta">${o.desc}</div>`:''}
-          ${o.link?`<a class="wk-li-link" href="${o.link}" target="_blank"><i class="ti ti-brand-youtube"></i> Watch</a>`:''}
+          ${o.link?`<a class="wk-li-link" href="${o.link}" target="_blank"><i class="ti ti-external-link"></i> VIEW LINK</a>`:''}
         </div></div>`;
       });
       html+=`</div>`;
@@ -1291,7 +1291,7 @@ function accHead(key,band,icon,label){
 }
 function bulletRow(item){
   return `<div class="wk-li"><div class="wk-li-body"><div class="wk-li-name">&bull; ${item.text}</div>
-    ${item.link?`<a class="wk-li-link" href="${item.link}" target="_blank"><i class="ti ti-brand-youtube"></i> Watch</a>`:''}</div></div>`;
+    ${item.link?`<a class="wk-li-link" href="${item.link}" target="_blank"><i class="ti ti-external-link"></i> VIEW LINK</a>`:''}</div></div>`;
 }
 
 function slotCard(s,i){
@@ -1318,7 +1318,7 @@ function exBox(ex,role,open){
     ${ex.equip?`<div class="ex-equip"><span class="eq-box"></span>${ex.equip}</div>`:''}
     ${ex.reps?`<div class="ex-rp">${ex.reps}</div>`:''}
     ${open&&ex.desc?`<div class="ex-dsc">${ex.desc}</div>`:''}
-    ${open&&ex.link?`<a class="ex-yt" href="${ex.link}" target="_blank" onclick="event.stopPropagation()"><i class="ti ti-brand-youtube"></i> Watch</a>`:''}
+    ${open&&ex.link?`<a class="ex-yt" href="${ex.link}" target="_blank" onclick="event.stopPropagation()"><i class="ti ti-external-link"></i> VIEW LINK</a>`:''}
   </div>`;
 }
 function fallbackSlot(ex,i){
