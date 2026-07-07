@@ -357,6 +357,54 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 /* OFFLINE BANNER */
 .offline-banner{position:fixed;top:0;left:0;right:0;background:#E07B20;color:white;text-align:center;font-size:13px;font-weight:500;padding:8px 16px;z-index:9998;display:none;font-family:'Inter',sans-serif;}
 .offline-banner.show{display:block;}
+/* ── SPEND TRACKER ─────────────────────────────────────────── */
+.sp-tabs{display:flex;background:white;border-bottom:0.5px solid #e8e8e8;position:sticky;top:0;z-index:5;}
+.sp-tab{flex:1;text-align:center;padding:13px 0;font-size:13px;font-weight:600;color:#8891A5;cursor:pointer;border-bottom:2px solid transparent;}
+.sp-tab.active{color:#1B2A4A;border-bottom-color:#1B2A4A;}
+.sp-screen{display:none;}
+.sp-screen.active{display:block;}
+.sp-cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px;}
+.sp-cat-btn{background:white;border:1.5px solid #e8e8e8;border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer;transition:.15s;}
+.sp-cat-btn i{font-size:20px;color:#1B2A4A;display:block;margin-bottom:6px;}
+.sp-cat-btn span{font-size:10.5px;font-weight:600;color:#1a1a1a;line-height:1.25;display:block;}
+.sp-cat-btn.selected{border-color:#1B2A4A;background:#EFF2F8;}
+.sp-field-row{padding:11px 14px;border-bottom:0.5px solid #f0f0f0;}
+.sp-field-row:last-child{border-bottom:none;}
+.sp-field-row .field-label{font-size:11px;font-weight:600;color:#8891A5;margin-bottom:4px;text-transform:none;letter-spacing:0;}
+.sp-field-input,.sp-field-select,.sp-field-textarea{width:100%;border:none;outline:none;font-family:'Inter',sans-serif;font-size:14.5px;color:#1B2A4A;background:transparent;text-align:left;font-weight:500;}
+.sp-field-textarea{resize:none;min-height:40px;}
+.sp-field-select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238891A5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 2px center;padding-right:16px;}
+.sp-amount-row{display:flex;align-items:center;gap:6px;}
+.sp-amount-row .sp-curr{font-size:14.5px;color:#8891A5;}
+.sp-chg-cred-toggle{display:inline-flex;background:#EFF2F8;border-radius:8px;padding:2px;margin-bottom:8px;}
+.sp-chg-cred-toggle button{border:none;background:none;font-size:11.5px;font-weight:600;color:#8891A5;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;}
+.sp-chg-cred-toggle button.active{background:#1B2A4A;color:#fff;}
+.sp-chg-cred-toggle button#sp-btn-credit.active{background:#4A6741;}
+.sp-note{font-size:11.5px;color:#8891A5;text-align:center;margin:14px 0 10px;padding:0 10px;line-height:1.5;}
+.sp-toggle-ytd{display:flex;background:#EFF2F8;border-radius:10px;padding:3px;margin-bottom:14px;}
+.sp-toggle-ytd button{flex:1;border:none;background:none;padding:9px 0;font-size:12.5px;font-weight:600;color:#8891A5;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;}
+.sp-toggle-ytd button.active{background:#1B2A4A;color:#fff;}
+.sp-month-nav{display:flex;align-items:center;justify-content:space-between;background:white;border:0.5px solid #e8e8e8;border-radius:12px;padding:10px 14px;margin-bottom:14px;}
+.sp-month-nav button{background:none;border:none;color:#1B2A4A;font-size:16px;cursor:pointer;}
+.sp-month-nav .sp-month-label{font-size:14px;font-weight:600;color:#1B2A4A;}
+.sp-total-card{background:#1B2A4A;border-radius:14px;padding:16px 18px;color:#fff;margin-bottom:14px;}
+.sp-total-card .lbl{font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+.sp-total-card .amt{font-size:26px;font-weight:700;margin-top:2px;}
+.sp-cat-block{background:white;border:0.5px solid #e8e8e8;border-radius:12px;margin-bottom:10px;overflow:hidden;}
+.sp-cat-block-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer;}
+.sp-cat-block-head .left{display:flex;align-items:center;gap:9px;}
+.sp-cat-block-head i.sp-cat-icon{font-size:16px;color:#1B2A4A;}
+.sp-cat-block-head .name{font-size:13.5px;font-weight:600;color:#1a1a1a;}
+.sp-cat-block-head .total{font-size:13.5px;font-weight:700;color:#1B2A4A;}
+.sp-expand-icon{display:inline-flex;align-items:center;}
+.sp-sub-list{display:none;border-top:0.5px solid #f0f0f0;}
+.sp-cat-block.open .sp-sub-list{display:block;}
+.sp-sub-row{display:flex;justify-content:space-between;padding:9px 14px 9px 39px;font-size:12.5px;border-bottom:0.5px solid #f5f5f5;}
+.sp-sub-row:last-child{border-bottom:none;}
+.sp-sub-row .n{color:#8891A5;}
+.sp-sub-row .v{font-weight:600;color:#1B2A4A;}
+.sp-pm-tag{display:inline-flex;align-items:center;gap:6px;background:#EFF2F8;border-radius:16px;padding:6px 10px 6px 12px;font-size:12.5px;font-weight:600;color:#1B2A4A;margin:3px;}
+.sp-pm-tag .rm{cursor:pointer;color:#C0392B;font-weight:700;}
 </style>
 </head>
 <body>
@@ -401,7 +449,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 <div id="screen-auth" class="screen active">
   <div class="vnt-logo auth"><i class="ti ti-sun-high"></i></div>
   <div class="auth-title">VNT Daily</div>
-  <div class="auth-version">v5.5 &nbsp;&bull;&nbsp; Jul 2026</div>
+  <div class="auth-version">v6.0 &nbsp;&bull;&nbsp; Jul 2026</div>
   <div class="auth-sub">Personal Assistant</div>
   <div class="auth-card">
     <div class="auth-field">
@@ -427,7 +475,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
       <div class="home-date" id="home-date"></div>
     </div>
     <div class="home-actions">
-      <span style="color:rgba(255,255,255,0.5);font-size:11px;margin-right:4px">v5.5</span>
+      <span style="color:rgba(255,255,255,0.5);font-size:11px;margin-right:4px">v6.0</span>
       <button class="home-gear" onclick="goTo('settings')" title="Settings"><i class="ti ti-settings"></i></button>
       <button class="home-signout" onclick="signOut()" title="Sign out"><i class="ti ti-logout"></i></button>
     </div>
@@ -439,6 +487,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
     <div class="tile" onclick="goTo('analyses')"><i class="ti ti-chart-bar"></i><div class="tile-name">Analyses</div><div class="tile-desc">Trends and reports</div></div>
     <div class="tile" onclick="goTo('travel')"><i class="ti ti-plane"></i><div class="tile-name">Travel</div><div class="tile-desc">Itinerary and trip planning</div></div>
     <div class="tile" onclick="goTo('games')"><i class="ti ti-puzzle"></i><div class="tile-name">Games</div><div class="tile-desc">Wordle and Sudoku</div></div>
+    <div class="tile" onclick="goTo('spend')"><i class="ti ti-receipt-2"></i><div class="tile-name">Spend Tracker</div><div class="tile-desc">Log expenses and view spend reports</div></div>
   </div>
 </div>
 
@@ -488,6 +537,10 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   <div class="section-label">Workout routine</div>
   <div class="field-card">
     <div id="deploy-workout-host"></div>
+  </div>
+  <div class="section-label">Spend Tracker &mdash; Payment Methods</div>
+  <div class="field-card" style="padding:10px 4px">
+    <div id="sp-settings-paymethods" style="padding:6px 10px"></div>
   </div>
   <div class="save-bar"><button class="save-btn" onclick="saveSettings()">Save settings</button></div>
 </div>
@@ -609,6 +662,90 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   <div id="games-content"></div>
 </div>
 
+<!-- SPEND TRACKER -->
+<div id="screen-spend" class="screen">
+  <div class="header">
+    <button class="header-back" onclick="goTo('home')"><i class="ti ti-arrow-left"></i> Home</button>
+    <div class="header-center"><div class="header-title">Spend Tracker</div></div>
+    <div class="header-right"><button class="header-gear" onclick="goTo('settings')"><i class="ti ti-settings"></i></button></div>
+  </div>
+  <div class="sp-tabs">
+    <div class="sp-tab active" id="sp-tab-entry" onclick="spShowTab('entry')">Log Spend</div>
+    <div class="sp-tab" id="sp-tab-reports" onclick="spShowTab('reports')">Reports</div>
+  </div>
+
+  <!-- ENTRY -->
+  <div class="sp-screen active" id="sp-screen-entry">
+    <div class="content">
+      <div class="section-label">Category</div>
+      <div class="sp-cat-grid" id="sp-cat-grid"></div>
+
+      <div class="section-label">Details</div>
+      <div class="field-card">
+        <div class="sp-field-row">
+          <div class="field-label">Date</div>
+          <input class="sp-field-input" type="date" id="sp-date" onchange="spUpdateDateDisplay()">
+          <div id="sp-date-display" style="font-size:12px;color:#8891A5;margin-top:3px;"></div>
+        </div>
+        <div class="sp-field-row">
+          <div class="field-label">Subcategory</div>
+          <select class="sp-field-select" id="sp-subcat"><option>Select a category first</option></select>
+        </div>
+        <div class="sp-field-row">
+          <div class="field-label">Spend Amount</div>
+          <div class="sp-chg-cred-toggle">
+            <button class="active" id="sp-btn-charge" onclick="spSetChargeCredit('charge')">Charge</button>
+            <button id="sp-btn-credit" onclick="spSetChargeCredit('credit')">Credit</button>
+          </div>
+          <div class="sp-amount-row">
+            <span class="sp-curr" id="sp-amt-sign">$</span><input class="sp-field-input" id="sp-amount" placeholder="0.00" inputmode="decimal">
+          </div>
+        </div>
+        <div class="sp-field-row">
+          <div class="field-label">Payment Method</div>
+          <select class="sp-field-select" id="sp-paymethod"></select>
+        </div>
+        <div class="sp-field-row">
+          <div class="field-label">Merchant</div>
+          <input class="sp-field-input" id="sp-merchant" placeholder="e.g. Publix, Amazon">
+        </div>
+        <div class="sp-field-row">
+          <div class="field-label">Item Description</div>
+          <input class="sp-field-input" id="sp-desc" placeholder="e.g. weekly groceries">
+        </div>
+        <div class="sp-field-row">
+          <div class="field-label">Notes</div>
+          <textarea class="sp-field-textarea" id="sp-notes" placeholder="optional"></textarea>
+        </div>
+      </div>
+      <div class="save-bar"><button class="save-btn" onclick="saveSpendEntry()"><i class="ti ti-check"></i> Save Entry</button></div>
+      <div class="sp-note">Editable Payment Method list lives in Settings. Date defaults to today &mdash; edit for future (pending) or backdated entries.</div>
+    </div>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="sp-screen" id="sp-screen-reports">
+    <div class="content">
+      <div class="sp-toggle-ytd">
+        <button class="active" id="sp-mode-month" onclick="spSetReportMode('month')">Monthly</button>
+        <button id="sp-mode-ytd" onclick="spSetReportMode('ytd')">Year to Date</button>
+      </div>
+      <div class="sp-month-nav" id="sp-month-nav">
+        <button onclick="spChangeMonth(-1)"><i class="ti ti-chevron-left"></i></button>
+        <div class="sp-month-label" id="sp-month-label"></div>
+        <button onclick="spChangeMonth(1)" id="sp-month-next"><i class="ti ti-chevron-right"></i></button>
+      </div>
+      <div class="sp-total-card">
+        <div class="lbl" id="sp-total-lbl">Total Spend</div>
+        <div class="amt" id="sp-total-amt">$0.00</div>
+      </div>
+      <div class="section-label">By Category</div>
+      <div id="sp-cat-blocks"></div>
+      <div class="sp-note">Need line-item detail? Open the "Nag Hub Data" Google Sheet &mdash; this view shows totals only.</div>
+    </div>
+  </div>
+</div>
+
 <!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -660,7 +797,7 @@ const CAL_URL='https://script.google.com/macros/s/AKfycbzcOivCM-Q1k_csmvxO8Qg3Cc
 
 // ── INTEGRITY CHECK ────────────────────────────────────────────
 (function(){
-  var required=['showScreen','goTo','signIn','saveBioEntry','saveWorkoutLog','saveSettings','loadAnalyses','renderTravelLanding','renderGamesHub'];
+  var required=['showScreen','goTo','signIn','saveBioEntry','saveWorkoutLog','saveSettings','loadAnalyses','renderTravelLanding','renderGamesHub','saveSpendEntry'];
   var missing=[];
   // Check after a short delay to allow all functions to be defined
   setTimeout(function(){
@@ -716,6 +853,8 @@ function goTo(screen){
   if(screen==='analyses'){loadAnalyses();}
   if(screen==='travel'){renderTravelLanding();}
   if(screen==='games'){renderGamesHub();}
+  if(screen==='spend'){spInit();}
+  if(screen==='settings'){spLoadPaymentMethods().then(()=>{spRenderSettingsPayMethods();spPopulateEntryPayMethodSelect();});}
 }
 // ── DATA EXPORT ───────────────────────────────────────────────
 async function exportCSV(type){
@@ -3030,6 +3169,259 @@ window.sudNewFromModal=sudNewFromModal;
 window.showSudokuDiffModal=showSudokuDiffModal;
 
 window.renderGamesHub=renderGamesHub;
+
+// ── SPEND TRACKER ─────────────────────────────────────────────
+const SP_CATEGORIES = [
+  {name:'Housing', icon:'ti-home', subs:['Rent Payment','Renters Insurance','Other Housing / Lease Fees','Renter-Paid Repairs / Maintenance','Household Supplies / Goods','Home Cleaning','Yard Maintenance/Upkeep','Pest Control']},
+  {name:'Utilities', icon:'ti-bolt', subs:['Electric','Water / Sewer / Trash','Natural Gas / Propane','Internet','Cell Phone','Streaming / Digital Services']},
+  {name:'Groceries & Dining', icon:'ti-shopping-cart', subs:['Groceries','Dining Out / Takeout / Coffee']},
+  {name:'Transportation', icon:'ti-car', subs:['Auto Insurance','Gas & Fuel','Auto Maintenance / Repairs','Auto Registration / Taxes / Fees','Parking / Tolls / Rideshare','Car Washes','Car Payment (if any)']},
+  {name:'Healthcare - User', icon:'ti-stethoscope', subs:['Medicare Part B Premium','Medicare IRMAA Surcharge','Medicare Advantage / Medigap / Supp.','Medicare Part D Premium','Rx Drugs','Doctor / Specialist / Copays','Dental','Vision','Medical Deductibles / Coinsurance','Medical Equipment / Supplies']},
+  {name:'Healthcare - Spouse', icon:'ti-heart-rate-monitor', subs:['COBRA / BCBS','Medicare IRMAA Surcharge','Medicare Advantage / Medigap / Supp.','Medicare Part D Premium','Rx Drugs','Doctor / Specialist / Copays','Dental','Vision','Medical Deductibles / Coinsurance','Medical Equipment / Supplies']},
+  {name:'Travel & Leisure', icon:'ti-plane', subs:['Vacations / Travel','Entertainment / Events','Hobbies / Memberships','Gym / Fitness - User','Gym / Fitness - Spouse','Education / Classes']},
+  {name:'Taxes & Financial', icon:'ti-file-invoice', subs:['Tax Prep / CPA','Financial Planning / Advisory Fees','Legal / Estate Planning','Banking / Credit Card Fees']},
+  {name:'Personal & Misc', icon:'ti-shirt', subs:['Clothing','Personal Care / Grooming','Gifts','Charitable Donations','Technology / Electronics Replacement','Online Subscriptions / Software','Pet Costs (if any)','Postage / Shipping','Other / Unknown Expense 1','Other / Unknown Expense 2','Miscellaneous / Buffer']},
+  {name:'Special / One-Time', icon:'ti-star', subs:['Car Purchase','Big Trips','Other']}
+];
+const SP_DEFAULT_PAYMETHODS = ['Card - VISA','Card - Amex','Card - Apple','Cheque','Auto-Pay','Debit','Debit - HSA','Cash','Online Transfer','Other'];
+
+let spSelectedCatIdx=null, spPayMethods=SP_DEFAULT_PAYMETHODS.slice(), spReportMode='month', spReportMonthOffset=0;
+
+function spInit(){
+  spBuildCatGrid();
+  document.getElementById('sp-date').valueAsDate = new Date();
+  spUpdateDateDisplay();
+  spLoadPaymentMethods().then(()=>{
+    spPopulateEntryPayMethodSelect();
+    spRenderSettingsPayMethods();
+  });
+  spReportMonthOffset=0;
+  spSetReportMode('month');
+}
+window.spInit=spInit;
+
+function spBuildCatGrid(){
+  const grid=document.getElementById('sp-cat-grid');
+  grid.innerHTML=SP_CATEGORIES.map((c,i)=>`
+    <div class="sp-cat-btn" id="sp-cat-${i}" onclick="spSelectCategory(${i})">
+      <i class="ti ${c.icon}"></i><span>${c.name}</span>
+    </div>`).join('');
+}
+function spSelectCategory(i){
+  spSelectedCatIdx=i;
+  document.querySelectorAll('.sp-cat-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('sp-cat-'+i).classList.add('selected');
+  const sel=document.getElementById('sp-subcat');
+  sel.innerHTML=SP_CATEGORIES[i].subs.map(s=>`<option>${s}</option>`).join('');
+}
+window.spSelectCategory=spSelectCategory;
+
+function spUpdateDateDisplay(){
+  const val=document.getElementById('sp-date').value;
+  const disp=document.getElementById('sp-date-display');
+  if(!val){disp.textContent='';return;}
+  const d=new Date(val+'T12:00:00');
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  disp.textContent=`${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} (${days[d.getDay()]})`;
+}
+window.spUpdateDateDisplay=spUpdateDateDisplay;
+
+function spSetChargeCredit(mode){
+  document.getElementById('sp-btn-charge').classList.toggle('active', mode==='charge');
+  document.getElementById('sp-btn-credit').classList.toggle('active', mode==='credit');
+  document.getElementById('sp-amt-sign').textContent = mode==='credit' ? '\u2212 $' : '$';
+  document.getElementById('sp-amount').dataset.mode=mode;
+}
+window.spSetChargeCredit=spSetChargeCredit;
+
+function spShowTab(name){
+  document.getElementById('sp-tab-entry').classList.toggle('active', name==='entry');
+  document.getElementById('sp-tab-reports').classList.toggle('active', name==='reports');
+  document.getElementById('sp-screen-entry').classList.toggle('active', name==='entry');
+  document.getElementById('sp-screen-reports').classList.toggle('active', name==='reports');
+  if(name==='reports')spLoadReports();
+}
+window.spShowTab=spShowTab;
+
+// ── PAYMENT METHODS (Settings-editable, stored in settings/{uid}.spendPayMethods) ──
+async function spLoadPaymentMethods(){
+  if(!window._db||!window._auth.currentUser){spPayMethods=SP_DEFAULT_PAYMETHODS.slice();return;}
+  try{
+    const snap=await window._getDoc(window._doc(window._db,'settings',window._auth.currentUser.uid));
+    const data=snap.exists()?snap.data():{};
+    spPayMethods=(data.spendPayMethods&&data.spendPayMethods.length)?data.spendPayMethods:SP_DEFAULT_PAYMETHODS.slice();
+  }catch(e){spPayMethods=SP_DEFAULT_PAYMETHODS.slice();}
+}
+function spPopulateEntryPayMethodSelect(){
+  const sel=document.getElementById('sp-paymethod');
+  if(sel)sel.innerHTML=spPayMethods.map(p=>`<option>${p}</option>`).join('');
+}
+function spRenderSettingsPayMethods(){
+  const host=document.getElementById('sp-settings-paymethods');
+  if(!host)return;
+  host.innerHTML=spPayMethods.map((p,i)=>`<span class="sp-pm-tag">${p}<span class="rm" onclick="spRemovePayMethod(${i})">&times;</span></span>`).join('')
+    + `<div style="display:flex;gap:6px;margin-top:8px;padding:0 3px">
+         <input id="sp-new-paymethod" placeholder="Add method..." style="flex:1;border:0.5px solid #e8e8e8;border-radius:8px;padding:8px 10px;font-size:13px;font-family:Inter,sans-serif;outline:none">
+         <button onclick="spAddPayMethod()" style="background:#1B2A4A;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Add</button>
+       </div>`;
+}
+async function spSavePaymentMethods(){
+  if(!window._db||!window._auth.currentUser)return;
+  const ref=window._doc(window._db,'settings',window._auth.currentUser.uid);
+  const snap=await window._getDoc(ref);
+  const existing=snap.exists()?snap.data():{};
+  await window._setDoc(ref,{...existing,spendPayMethods:spPayMethods,updatedAt:new Date().toISOString()});
+}
+function spAddPayMethod(){
+  const inp=document.getElementById('sp-new-paymethod');
+  const val=(inp.value||'').trim();
+  if(!val)return;
+  if(spPayMethods.includes(val)){inp.value='';return;}
+  spPayMethods.push(val);
+  inp.value='';
+  spRenderSettingsPayMethods();
+  spPopulateEntryPayMethodSelect();
+  spSavePaymentMethods();
+}
+window.spAddPayMethod=spAddPayMethod;
+function spRemovePayMethod(i){
+  spPayMethods.splice(i,1);
+  spRenderSettingsPayMethods();
+  spPopulateEntryPayMethodSelect();
+  spSavePaymentMethods();
+}
+window.spRemovePayMethod=spRemovePayMethod;
+
+// ── SAVE ENTRY ───────────────────────────────────────────────
+async function saveSpendEntry(){
+  if(!window._db||!window._auth.currentUser){showToast('Please sign in first');return;}
+  if(spSelectedCatIdx===null){showToast('Select a category');return;}
+  const dateVal=document.getElementById('sp-date').value;
+  if(!dateVal){showToast('Select a date');return;}
+  const rawAmt=parseFloat(document.getElementById('sp-amount').value);
+  if(isNaN(rawAmt)||rawAmt<=0){showToast('Enter a valid amount');return;}
+  const isCredit=document.getElementById('sp-amount').dataset.mode==='credit';
+  const amount=isCredit?-Math.abs(rawAmt):Math.abs(rawAmt);
+  const category=SP_CATEGORIES[spSelectedCatIdx].name;
+  const subcategory=document.getElementById('sp-subcat').value;
+  const paymentMethod=document.getElementById('sp-paymethod').value;
+  const merchant=document.getElementById('sp-merchant').value.trim();
+  const description=document.getElementById('sp-desc').value.trim();
+  const notes=document.getElementById('sp-notes').value.trim();
+  const entry={
+    userId:window._auth.currentUser.uid,
+    date:dateVal, category, subcategory, amount, isCredit,
+    paymentMethod, merchant, description, notes,
+    createdAt:new Date().toISOString()
+  };
+  try{
+    const ref=window._doc(window._collection(window._db,'spendLog'));
+    await window._setDoc(ref,entry);
+    pushToSheets('Spend Log',[dateVal,category,subcategory,amount,paymentMethod,merchant,description,notes]);
+    showToast('Expense saved \u2713',true);
+    document.getElementById('sp-amount').value='';
+    document.getElementById('sp-merchant').value='';
+    document.getElementById('sp-desc').value='';
+    document.getElementById('sp-notes').value='';
+    spSetChargeCredit('charge');
+  }catch(e){showToast('Error saving \u2014 check connection');}
+}
+window.saveSpendEntry=saveSpendEntry;
+
+// ── REPORTS ──────────────────────────────────────────────────
+function spSetReportMode(mode){
+  spReportMode=mode;
+  document.getElementById('sp-mode-month').classList.toggle('active',mode==='month');
+  document.getElementById('sp-mode-ytd').classList.toggle('active',mode==='ytd');
+  document.getElementById('sp-month-nav').style.display = mode==='month' ? 'flex' : 'none';
+  spLoadReports();
+}
+window.spSetReportMode=spSetReportMode;
+
+function spChangeMonth(delta){
+  spReportMonthOffset+=delta;
+  spLoadReports();
+}
+window.spChangeMonth=spChangeMonth;
+
+async function spLoadReports(){
+  if(!window._db||!window._auth.currentUser)return;
+  const now=new Date();
+  let rangeStart, rangeEnd, label;
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  if(spReportMode==='month'){
+    const target=new Date(now.getFullYear(), now.getMonth()+spReportMonthOffset, 1);
+    rangeStart=toLocalDateStr(new Date(target.getFullYear(),target.getMonth(),1));
+    rangeEnd=toLocalDateStr(new Date(target.getFullYear(),target.getMonth()+1,0));
+    label=months[target.getMonth()]+' '+target.getFullYear();
+    const isCurrentMonth=(target.getFullYear()===now.getFullYear()&&target.getMonth()===now.getMonth());
+    label += isCurrentMonth ? ' <span class="mtd-badge" style="font-size:10px;background:#E07B20;color:#fff;padding:2px 7px;border-radius:8px;font-weight:600;margin-left:6px">MTD</span>' : '';
+    document.getElementById('sp-total-lbl').textContent = isCurrentMonth ? 'Total Spend \u2014 Month to Date' : 'Total Spend';
+    document.getElementById('sp-month-next').style.visibility = isCurrentMonth ? 'hidden' : 'visible';
+  }else{
+    rangeStart=toLocalDateStr(new Date(now.getFullYear(),0,1));
+    rangeEnd=toLocalDateStr(now);
+    label='Jan 1 \u2013 Today, '+now.getFullYear();
+    document.getElementById('sp-total-lbl').textContent='Total Spend \u2014 Year to Date';
+  }
+  document.getElementById('sp-month-label').innerHTML=label;
+
+  try{
+    const q=window._query(window._collection(window._db,'spendLog'),window._where('userId','==',window._auth.currentUser.uid));
+    const snap=await window._getDocs(q);
+    const rows=[];
+    snap.forEach(d=>{
+      const r=d.data();
+      if(r.date>=rangeStart&&r.date<=rangeEnd)rows.push(r);
+    });
+    spRenderReportBlocks(rows);
+  }catch(e){
+    document.getElementById('sp-cat-blocks').innerHTML='<div class="no-data">Could not load spend data.</div>';
+  }
+}
+
+function spRenderReportBlocks(rows){
+  const totals={}; // cat -> {total, subs:{sub:amt}}
+  let grandTotal=0;
+  rows.forEach(r=>{
+    grandTotal+=r.amount;
+    if(!totals[r.category])totals[r.category]={total:0,subs:{}};
+    totals[r.category].total+=r.amount;
+    totals[r.category].subs[r.subcategory]=(totals[r.category].subs[r.subcategory]||0)+r.amount;
+  });
+  document.getElementById('sp-total-amt').textContent='$'+grandTotal.toFixed(2);
+
+  const wrap=document.getElementById('sp-cat-blocks');
+  const catNames=Object.keys(totals);
+  if(!catNames.length){wrap.innerHTML='<div class="no-data">No expenses logged for this period.</div>';return;}
+  wrap.innerHTML=catNames.map((catName,idx)=>{
+    const catDef=SP_CATEGORIES.find(c=>c.name===catName)||{icon:'ti-receipt-2'};
+    const t=totals[catName];
+    const subRows=Object.entries(t.subs).map(([n,v])=>`<div class="sp-sub-row"><span class="n">${n}</span><span class="v">$${v.toFixed(2)}</span></div>`).join('');
+    return `<div class="sp-cat-block" id="sp-blk-${idx}">
+      <div class="sp-cat-block-head" onclick="spToggleBlock(${idx})">
+        <div class="left"><i class="ti ${catDef.icon} sp-cat-icon"></i><span class="name">${catName}</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="total">$${t.total.toFixed(2)}</span>
+          <span class="sp-expand-icon" id="sp-chev-${idx}">
+            <svg class="icon-plus" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#1B2A4A" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            <svg class="icon-minus" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#1B2A4A" stroke-width="2" stroke-linecap="round" style="display:none"><circle cx="12" cy="12" r="9"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          </span>
+        </div>
+      </div>
+      <div class="sp-sub-list">${subRows}</div>
+    </div>`;
+  }).join('');
+}
+function spToggleBlock(i){
+  const blk=document.getElementById('sp-blk-'+i);
+  const icon=document.getElementById('sp-chev-'+i);
+  blk.classList.toggle('open');
+  const isOpen=blk.classList.contains('open');
+  icon.querySelector('.icon-plus').style.display = isOpen ? 'none' : 'inline';
+  icon.querySelector('.icon-minus').style.display = isOpen ? 'inline' : 'none';
+}
+window.spToggleBlock=spToggleBlock;
 
 </script>
 </body>
