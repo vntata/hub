@@ -405,6 +405,12 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .sp-sub-row .v{font-weight:600;color:#1B2A4A;}
 .sp-pm-tag{display:inline-flex;align-items:center;gap:6px;background:#EFF2F8;border-radius:16px;padding:6px 10px 6px 12px;font-size:12.5px;font-weight:600;color:#1B2A4A;margin:3px;}
 .sp-pm-tag .rm{cursor:pointer;color:#C0392B;font-weight:700;}
+.sp-manage-row{display:flex;align-items:center;gap:12px;background:white;border:0.5px solid #e8e8e8;border-radius:12px;padding:12px 14px;margin-bottom:8px;}
+.sp-manage-row input[type=checkbox]{width:19px;height:19px;flex-shrink:0;accent-color:#1B2A4A;}
+.sp-manage-row .info{flex:1;cursor:pointer;min-width:0;}
+.sp-manage-row .line1{display:flex;justify-content:space-between;font-size:13.5px;font-weight:600;color:#1B2A4A;}
+.sp-manage-row .line1 .amt.credit{color:#4A6741;}
+.sp-manage-row .line2{font-size:12px;color:#8891A5;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -672,11 +678,16 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   <div class="sp-tabs">
     <div class="sp-tab active" id="sp-tab-entry" onclick="spShowTab('entry')">Log Spend</div>
     <div class="sp-tab" id="sp-tab-reports" onclick="spShowTab('reports')">Reports</div>
+    <div class="sp-tab" id="sp-tab-manage" onclick="spShowTab('manage')">Manage</div>
   </div>
 
   <!-- ENTRY -->
   <div class="sp-screen active" id="sp-screen-entry">
     <div class="content">
+      <div id="sp-edit-banner" style="display:none;background:#EFF2F8;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:none;align-items:center;justify-content:space-between;">
+        <span style="font-size:12.5px;font-weight:600;color:#1B2A4A;"><i class="ti ti-pencil"></i> Editing existing entry</span>
+        <span style="font-size:12.5px;font-weight:600;color:#C0392B;cursor:pointer;" onclick="spCancelEdit()">Cancel</span>
+      </div>
       <div class="section-label">Category</div>
       <div class="sp-cat-grid" id="sp-cat-grid"></div>
 
@@ -718,7 +729,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
           <textarea class="sp-field-textarea" id="sp-notes" placeholder="optional"></textarea>
         </div>
       </div>
-      <div class="save-bar"><button class="save-btn" onclick="saveSpendEntry()"><i class="ti ti-check"></i> Save Entry</button></div>
+      <div class="save-bar"><button class="save-btn" id="sp-save-btn" onclick="saveSpendEntry()"><i class="ti ti-check"></i> Save Entry</button></div>
       <div class="sp-note">Editable Payment Method list lives in Settings. Date defaults to today &mdash; edit for future (pending) or backdated entries.</div>
     </div>
   </div>
@@ -741,7 +752,20 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
       </div>
       <div class="section-label">By Category</div>
       <div id="sp-cat-blocks"></div>
-      <div class="sp-note">Need line-item detail? Open the "Nag Hub Data" Google Sheet &mdash; this view shows totals only.</div>
+      <div class="save-bar"><button class="save-btn" onclick="spExportCSV()"><i class="ti ti-download"></i> Export CSV (this period)</button></div>
+      <div class="sp-note">CSV includes every line item for the period shown above, pulled fresh from your data &mdash; always accurate, no manual Sheet needed.</div>
+    </div>
+  </div>
+
+  <!-- MANAGE -->
+  <div class="sp-screen" id="sp-screen-manage">
+    <div class="content" style="padding-bottom:80px;">
+      <div class="section-label">All Entries</div>
+      <div id="sp-manage-list"></div>
+    </div>
+    <div id="sp-delete-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:#1B2A4A;padding:12px 18px;display:none;align-items:center;justify-content:space-between;z-index:20;">
+      <span style="color:#fff;font-size:13px;font-weight:600;" id="sp-delete-count">0 selected</span>
+      <button onclick="spDeleteSelected()" style="background:#C0392B;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;"><i class="ti ti-trash"></i> Delete</button>
     </div>
   </div>
 </div>
@@ -3186,6 +3210,7 @@ const SP_CATEGORIES = [
 const SP_DEFAULT_PAYMETHODS = ['Card - VISA','Card - Amex','Card - Apple','Cheque','Auto-Pay','Debit','Debit - HSA','Cash','Online Transfer','Other'];
 
 let spSelectedCatIdx=null, spPayMethods=SP_DEFAULT_PAYMETHODS.slice(), spReportMode='month', spReportMonthOffset=0;
+let spCurrentRows=[], spCurrentRangeLabel='';
 
 function spInit(){
   spBuildCatGrid();
@@ -3238,9 +3263,12 @@ window.spSetChargeCredit=spSetChargeCredit;
 function spShowTab(name){
   document.getElementById('sp-tab-entry').classList.toggle('active', name==='entry');
   document.getElementById('sp-tab-reports').classList.toggle('active', name==='reports');
+  document.getElementById('sp-tab-manage').classList.toggle('active', name==='manage');
   document.getElementById('sp-screen-entry').classList.toggle('active', name==='entry');
   document.getElementById('sp-screen-reports').classList.toggle('active', name==='reports');
+  document.getElementById('sp-screen-manage').classList.toggle('active', name==='manage');
   if(name==='reports')spLoadReports();
+  if(name==='manage')spLoadManageList();
 }
 window.spShowTab=spShowTab;
 
@@ -3293,7 +3321,9 @@ function spRemovePayMethod(i){
 }
 window.spRemovePayMethod=spRemovePayMethod;
 
-// ── SAVE ENTRY ───────────────────────────────────────────────
+// ── SAVE ENTRY (create or update) ───────────────────────────
+let spEditingId=null;
+
 async function saveSpendEntry(){
   if(!window._db||!window._auth.currentUser){showToast('Please sign in first');return;}
   if(spSelectedCatIdx===null){showToast('Select a category');return;}
@@ -3316,18 +3346,41 @@ async function saveSpendEntry(){
     createdAt:new Date().toISOString()
   };
   try{
-    const ref=window._doc(window._collection(window._db,'spendLog'));
-    await window._setDoc(ref,entry);
-    pushToSheets('Spend Log',[dateVal,category,subcategory,amount,paymentMethod,merchant,description,notes]);
-    showToast('Expense saved \u2713',true);
-    document.getElementById('sp-amount').value='';
-    document.getElementById('sp-merchant').value='';
-    document.getElementById('sp-desc').value='';
-    document.getElementById('sp-notes').value='';
-    spSetChargeCredit('charge');
+    if(spEditingId){
+      await window._setDoc(window._doc(window._db,'spendLog',spEditingId), entry);
+      showToast('Entry updated \u2713',true);
+      spCancelEdit();
+      spShowTab('manage');
+    }else{
+      const ref=window._doc(window._collection(window._db,'spendLog'));
+      await window._setDoc(ref,entry);
+      showToast('Expense saved \u2713',true);
+      document.getElementById('sp-amount').value='';
+      document.getElementById('sp-merchant').value='';
+      document.getElementById('sp-desc').value='';
+      document.getElementById('sp-notes').value='';
+      spSetChargeCredit('charge');
+    }
   }catch(e){showToast('Error saving \u2014 check connection');}
 }
 window.saveSpendEntry=saveSpendEntry;
+
+function spCancelEdit(){
+  spEditingId=null;
+  document.getElementById('sp-edit-banner').style.display='none';
+  document.getElementById('sp-save-btn').innerHTML='<i class="ti ti-check"></i> Save Entry';
+  spSelectedCatIdx=null;
+  document.querySelectorAll('.sp-cat-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('sp-subcat').innerHTML='<option>Select a category first</option>';
+  document.getElementById('sp-date').valueAsDate=new Date();
+  spUpdateDateDisplay();
+  document.getElementById('sp-amount').value='';
+  document.getElementById('sp-merchant').value='';
+  document.getElementById('sp-desc').value='';
+  document.getElementById('sp-notes').value='';
+  spSetChargeCredit('charge');
+}
+window.spCancelEdit=spCancelEdit;
 
 // ── REPORTS ──────────────────────────────────────────────────
 function spSetReportMode(mode){
@@ -3376,6 +3429,8 @@ async function spLoadReports(){
       if(r.date>=rangeStart&&r.date<=rangeEnd)rows.push(r);
     });
     spRenderReportBlocks(rows);
+    spCurrentRows=rows;
+    spCurrentRangeLabel=(spReportMode==='month') ? label.replace(/<[^>]+>/g,'').trim() : label;
   }catch(e){
     document.getElementById('sp-cat-blocks').innerHTML='<div class="no-data">Could not load spend data.</div>';
   }
@@ -3422,6 +3477,121 @@ function spToggleBlock(i){
   icon.querySelector('.icon-minus').style.display = isOpen ? 'inline' : 'none';
 }
 window.spToggleBlock=spToggleBlock;
+
+function spExportCSV(){
+  if(!spCurrentRows.length){showToast('Nothing to export for this period');return;}
+  const cols=['Date','Category','Subcategory','Type','Amount','Payment Method','Merchant','Description','Notes'];
+  const esc=v=>{
+    const s=(v===undefined||v===null)?'':String(v);
+    return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+  };
+  const rows=spCurrentRows.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(r=>[
+    r.date, r.category, r.subcategory, r.isCredit?'Credit':'Charge',
+    Math.abs(r.amount).toFixed(2), r.paymentMethod, r.merchant, r.description, r.notes
+  ].map(esc).join(','));
+  const csv=[cols.join(','), ...rows].join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const safeLabel=spCurrentRangeLabel.replace(/[^\w-]+/g,'_');
+  a.href=url;
+  a.download=`spend_${safeLabel}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+window.spExportCSV=spExportCSV;
+
+// ── MANAGE (list, edit, delete) ─────────────────────────────
+let spManageEntries=[]; // [{id,...fields}]
+let spSelectedIds=new Set();
+
+async function spLoadManageList(){
+  const host=document.getElementById('sp-manage-list');
+  host.innerHTML='<div class="no-data">Loading...</div>';
+  if(!window._db||!window._auth.currentUser)return;
+  try{
+    const q=window._query(window._collection(window._db,'spendLog'),window._where('userId','==',window._auth.currentUser.uid));
+    const snap=await window._getDocs(q);
+    spManageEntries=[];
+    snap.forEach(d=>spManageEntries.push({id:d.id,...d.data()}));
+    spManageEntries.sort((a,b)=> a.date===b.date ? (b.createdAt||'').localeCompare(a.createdAt||'') : b.date.localeCompare(a.date));
+    spSelectedIds.clear();
+    spUpdateDeleteBar();
+    spRenderManageList();
+  }catch(e){
+    host.innerHTML='<div class="no-data">Could not load entries.</div>';
+  }
+}
+
+function spRenderManageList(){
+  const host=document.getElementById('sp-manage-list');
+  if(!spManageEntries.length){host.innerHTML='<div class="no-data">No entries yet.</div>';return;}
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  host.innerHTML=spManageEntries.map(e=>{
+    const d=new Date(e.date+'T12:00:00');
+    const dLabel=`${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    const amtLabel=(e.isCredit?'\u2212 $':'$')+Math.abs(e.amount).toFixed(2);
+    const merchantOrCat = e.merchant || e.category;
+    const desc = [e.subcategory, e.description].filter(Boolean).join(' \u2022 ');
+    return `<div class="sp-manage-row">
+      <input type="checkbox" onchange="spToggleSelect('${e.id}')" ${spSelectedIds.has(e.id)?'checked':''}>
+      <div class="info" onclick="spManageEditEntry('${e.id}')">
+        <div class="line1"><span>${dLabel} &middot; ${merchantOrCat}</span><span class="amt${e.isCredit?' credit':''}">${amtLabel}</span></div>
+        <div class="line2">${desc}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function spToggleSelect(id){
+  if(spSelectedIds.has(id))spSelectedIds.delete(id); else spSelectedIds.add(id);
+  spUpdateDeleteBar();
+}
+window.spToggleSelect=spToggleSelect;
+
+function spUpdateDeleteBar(){
+  const bar=document.getElementById('sp-delete-bar');
+  const n=spSelectedIds.size;
+  bar.style.display = n>0 ? 'flex' : 'none';
+  document.getElementById('sp-delete-count').textContent = n+' selected';
+}
+
+async function spDeleteSelected(){
+  if(!spSelectedIds.size)return;
+  if(!confirm(`Delete ${spSelectedIds.size} ${spSelectedIds.size===1?'entry':'entries'}? This cannot be undone.`))return;
+  try{
+    for(const id of spSelectedIds){
+      await window._deleteDoc(window._doc(window._db,'spendLog',id));
+    }
+    showToast('Deleted \u2713',true);
+    spLoadManageList();
+  }catch(e){showToast('Error deleting \u2014 check connection');}
+}
+window.spDeleteSelected=spDeleteSelected;
+
+function spManageEditEntry(id){
+  const e=spManageEntries.find(x=>x.id===id);
+  if(!e)return;
+  spEditingId=id;
+  document.getElementById('sp-edit-banner').style.display='flex';
+  document.getElementById('sp-save-btn').innerHTML='<i class="ti ti-check"></i> Update Entry';
+  const catIdx=SP_CATEGORIES.findIndex(c=>c.name===e.category);
+  if(catIdx>-1)spSelectCategory(catIdx);
+  document.getElementById('sp-subcat').value=e.subcategory||'';
+  document.getElementById('sp-date').value=e.date;
+  spUpdateDateDisplay();
+  document.getElementById('sp-amount').value=Math.abs(e.amount).toFixed(2);
+  document.getElementById('sp-amount').dataset.mode = e.isCredit?'credit':'charge';
+  spSetChargeCredit(e.isCredit?'credit':'charge');
+  document.getElementById('sp-paymethod').value=e.paymentMethod||'';
+  document.getElementById('sp-merchant').value=e.merchant||'';
+  document.getElementById('sp-desc').value=e.description||'';
+  document.getElementById('sp-notes').value=e.notes||'';
+  spShowTab('entry');
+}
+window.spManageEditEntry=spManageEditEntry;
 
 </script>
 </body>
