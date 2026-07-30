@@ -443,6 +443,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 <div class="modal-overlay" id="leg-modal">
   <div class="modal-card">
     <div class="modal-title" id="leg-modal-title">Add Flight</div>
+    <div id="leg-modal-err" style="display:none;background:#fdecec;border:0.5px solid #f0b0b0;color:#C0392B;border-radius:8px;padding:10px 12px;font-size:13px;font-weight:500;margin-bottom:12px"></div>
     <div id="leg-modal-body"></div>
     <div class="modal-btns">
       <button class="modal-btn-cancel" onclick="closeLegModal()">Cancel</button>
@@ -455,7 +456,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 <div id="screen-auth" class="screen active">
   <div class="vnt-logo auth"><i class="ti ti-sun-high"></i></div>
   <div class="auth-title">VNT Daily</div>
-  <div class="auth-version">v6.0 &nbsp;&bull;&nbsp; Jul 2026</div>
+  <div class="auth-version">v6.1 &nbsp;&bull;&nbsp; Jul 2026</div>
   <div class="auth-sub">Personal Assistant</div>
   <div class="auth-card">
     <div class="auth-field">
@@ -481,7 +482,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
       <div class="home-date" id="home-date"></div>
     </div>
     <div class="home-actions">
-      <span style="color:rgba(255,255,255,0.5);font-size:11px;margin-right:4px">v6.0</span>
+      <span style="color:rgba(255,255,255,0.5);font-size:11px;margin-right:4px">v6.1</span>
       <button class="home-gear" onclick="goTo('settings')" title="Settings"><i class="ti ti-settings"></i></button>
       <button class="home-signout" onclick="signOut()" title="Sign out"><i class="ti ti-logout"></i></button>
     </div>
@@ -1925,8 +1926,8 @@ function renderTripForm(isEdit){
         <div class="form-field"><label class="form-label">Trip name</label><input class="form-input" id="tf-name" placeholder="e.g. Toronto June 2026" value="${t.name||''}"></div>
         <div class="form-field"><label class="form-label">Destination(s)</label><input class="form-input" id="tf-dest" placeholder="e.g. Toronto, ON" value="${t.destinations||''}"></div>
         <div class="form-row">
-          <div class="form-field"><label class="form-label">Start date</label><input class="form-input" id="tf-start" type="date" value="${t.startDate||''}"></div>
-          <div class="form-field"><label class="form-label">End date</label><input class="form-input" id="tf-end" type="date" value="${t.endDate||''}"></div>
+          <div class="form-field"><label class="form-label">Start date</label><input class="form-input" id="tf-start" type="date" value="${t.startDate||''}" onchange="var e=document.getElementById('tf-end');if(this.value){e.min=this.value;if(!e.value||e.value<this.value)e.value=this.value;}"></div>
+          <div class="form-field"><label class="form-label">End date</label><input class="form-input" id="tf-end" type="date" value="${t.endDate||''}" min="${t.startDate||''}"></div>
         </div>
         <div class="form-field"><label class="form-label">Departing from</label><input class="form-input" id="tf-from" placeholder="e.g. Wesley Chapel, FL" value="${t.departFrom||'Wesley Chapel, FL'}"></div>
         <div class="form-field"><label class="form-label">Travellers</label><input class="form-input" id="tf-who" placeholder="e.g. Just me, or list names" value="${t.travellers||''}"></div>
@@ -2029,6 +2030,17 @@ function formatDayLabel(dateStr,legs){
   }catch(e){return dateStr;}
 }
 
+// Convert "HH:MM" (24h) to "H:MM AM/PM". Leaves already-formatted or empty strings alone.
+function to12h(t){
+  if(!t)return '';
+  var m=/^(\d{1,2}):(\d{2})$/.exec(t.trim());
+  if(!m)return t; // already has AM/PM or non-standard — leave as-is
+  var h=parseInt(m[1],10),min=m[2];
+  var ap=h<12?'AM':'PM';var h12=h%12;if(h12===0)h12=12;
+  return h12+':'+min+' '+ap;
+}
+window.to12h=to12h;
+
 function renderLegCard(leg,i,locked){
   const lt=LEG_TYPES.find(t=>t.id===leg.type)||{icon:'&#x1F4CC;',label:'Other'};
   let title='',detail='',time='';
@@ -2080,7 +2092,7 @@ function renderLegCard(leg,i,locked){
     <div class="leg-header">
       <div class="leg-icon">${lt.icon}</div>
       <div class="leg-main"><div class="leg-type">${lt.label}${locked?' \u2014 past day':''}</div><div class="leg-title">${title}</div>${detail?`<div class="leg-detail">${detail}</div>`:''}</div>
-      ${time?`<div class="leg-time">${time}</div>`:''}
+      ${time?`<div class="leg-time">${to12h(time)}</div>`:''}
     </div>
     ${leg.providerName||leg.bookedVia?`<div style="font-size:11px;color:#777;padding:0 14px 8px;display:flex;gap:10px;flex-wrap:wrap">
       ${leg.providerName?`<span><b>${leg.providerName}</b>${leg.providerConf?' &nbsp;Conf: '+leg.providerConf:''}</span>`:''}
@@ -2115,6 +2127,7 @@ function openAddLeg(type,insertAfter){
   // Pre-fill with last booking info for new legs
   const preFill={providerPhone:_lastBooking.providerPhone,providerWeb:_lastBooking.providerWeb,
     bookedVia:_lastBooking.bookedVia,agentPhone:_lastBooking.agentPhone,agentWeb:_lastBooking.agentWeb};
+  var eb0=document.getElementById('leg-modal-err');if(eb0)eb0.style.display='none';
   document.getElementById('leg-modal-body').innerHTML=buildLegForm(type,preFill);
   document.getElementById('leg-modal').classList.add('show');
 }
@@ -2124,30 +2137,41 @@ function openEditLeg(i){
   pendingLegType=leg.type;
   const lt=LEG_TYPES.find(t=>t.id===leg.type);
   document.getElementById('leg-modal-title').textContent='Edit '+lt.label;
+  var eb1=document.getElementById('leg-modal-err');if(eb1)eb1.style.display='none';
   document.getElementById('leg-modal-body').innerHTML=buildLegForm(leg.type,leg);
   document.getElementById('leg-modal').classList.add('show');
 }
-function closeLegModal(){document.getElementById('leg-modal').classList.remove('show');editLegIdx=null;insertAfterIdx=null;pendingLegType=null;}
+function closeLegModal(){document.getElementById('leg-modal').classList.remove('show');var eb=document.getElementById('leg-modal-err');if(eb)eb.style.display='none';editLegIdx=null;insertAfterIdx=null;pendingLegType=null;}
 window.openAddLeg=openAddLeg;window.openEditLeg=openEditLeg;window.closeLegModal=closeLegModal;
 
 function fi(id,placeholder,value,type){return `<div class="form-field"><label class="form-label">${placeholder}</label><input class="form-input" id="lf-${id}" type="${type||'text'}" placeholder="${placeholder}" value="${value||''}"></div>`;}
 
+// Keep an "end" date >= a "start" date: sets min, and pre-fills end to start if end is empty or earlier.
+function syncEndDate(startId,endId){
+  var s=document.getElementById('lf-'+startId),e=document.getElementById('lf-'+endId);
+  if(!s||!e)return;
+  if(s.value){e.min=s.value;if(!e.value||e.value<s.value)e.value=s.value;}
+}
+window.syncEndDate=syncEndDate;
+
 function toggleAgentFields(){
   var bv=document.getElementById('lf-bookedVia');
   var wrap=document.getElementById('agent-fields-wrap');
-  if(bv&&wrap){wrap.style.display=(bv.value.trim()&&bv.value.trim()!=='Direct')?'block':'none';}
+  if(bv&&wrap){wrap.style.display=isDirect(bv.value)?'none':'block';}
 }
 window.toggleAgentFields=toggleAgentFields;
 
+function isDirect(bv){var s=(bv||'').trim().toLowerCase();return !s||s==='direct'||s==='booked direct';}
 function bookingFields(leg){
   const v=id=>leg?leg[id]||'':'';
-  const showAgent=!!(v('bookedVia')&&v('bookedVia')!==v('providerName'));
+  const bvVal=v('bookedVia')||'Booked Direct';
+  const showAgent=!isDirect(bvVal)&&bvVal!==v('providerName');
   return `<div style="background:#f8f9fb;border:0.5px solid #e0e4ec;border-radius:10px;padding:12px;margin-top:8px">
     <div style="font-size:11px;font-weight:600;color:#777;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Booking info</div>
     ${fi('providerName','Provider name (e.g. JetBlue, Marriott)',v('providerName'))}
     ${fi('providerConf','Provider confirmation #',v('providerConf'))}
     <div class="form-row">${fi('providerPhone','Provider phone',v('providerPhone'))}${fi('providerWeb','Provider website',v('providerWeb'))}</div>
-    <div class="form-field"><label class="form-label">Booked via</label><input class="form-input" id="lf-bookedVia" type="text" placeholder="Leave blank if direct, or enter agent name" value="${v('bookedVia')}" oninput="toggleAgentFields()"></div>
+    <div class="form-field"><label class="form-label">Booked via</label><input class="form-input" id="lf-bookedVia" type="text" placeholder="Booked Direct, or enter agent/planner name" value="${bvVal}" oninput="toggleAgentFields()"></div>
     <div id="agent-fields-wrap" style="display:${showAgent?'block':'none'}">
       ${fi('agentBookingNum','Agent booking / ref #',v('agentBookingNum'))}
       <div class="form-row">${fi('agentPhone','Agent phone',v('agentPhone'))}${fi('agentWeb','Agent website',v('agentWeb'))}</div>
@@ -2177,8 +2201,8 @@ function buildLegForm(type,leg){
       ${fi('address','Address',v('address'))}
       ${fi('confNum','Confirmation #',v('confNum'))}
       ${fi('roomType','Room type (e.g. Queen Bed)',v('roomType'))}
-      ${frow(fi('checkinDate','Check-in date',v('checkinDate'),'date'),fi('checkinTime','Check-in time',v('checkinTime'),'time'))}
-      ${fi('checkoutDate','Check-out date',v('checkoutDate'),'date')}
+      ${frow('<div class="form-field"><label class="form-label">Check-in date</label><input class="form-input" id="lf-checkinDate" type="date" value="'+(v('checkinDate')||'')+'" onchange="syncEndDate(\'checkinDate\',\'checkoutDate\')"></div>',fi('checkinTime','Check-in time',v('checkinTime'),'time'))}
+      <div class="form-field"><label class="form-label">Check-out date</label><input class="form-input" id="lf-checkoutDate" type="date" value="${v('checkoutDate')||''}" min="${v('checkinDate')||''}"></div>
       ${bookingFields(leg)}`;
     case 'drive':return `
       ${fi('date','Date',v('date'),'date')}
@@ -2207,9 +2231,9 @@ function buildLegForm(type,leg){
       ${fi('confNum','Confirmation #',v('confNum'))}
       ${fi('carType','Car type (e.g. Compact SUV)',v('carType'))}
       ${fi('address','Pickup address',v('address'))}
-      ${frow(fi('pickupDate','Pickup date',v('pickupDate'),'date'),fi('pickupTime','Pickup time',v('pickupTime'),'time'))}
+      ${frow('<div class="form-field"><label class="form-label">Pickup date</label><input class="form-input" id="lf-pickupDate" type="date" value="'+(v('pickupDate')||'')+'" onchange="syncEndDate(\'pickupDate\',\'returnDate\')"></div>',fi('pickupTime','Pickup time',v('pickupTime'),'time'))}
       ${fi('returnAddress','Return address',v('returnAddress'))}
-      ${frow(fi('returnDate','Return date',v('returnDate'),'date'),fi('returnTime','Return time',v('returnTime'),'time'))}
+      ${frow('<div class="form-field"><label class="form-label">Return date</label><input class="form-input" id="lf-returnDate" type="date" value="'+(v('returnDate')||'')+'" min="'+(v('pickupDate')||'')+'"></div>',fi('returnTime','Return time',v('returnTime'),'time'))}
       ${bookingFields(leg)}`;
     case 'train':return `
       ${fi('date','Date',v('date'),'date')}
@@ -2247,8 +2271,9 @@ function gv(id){const el=document.getElementById('lf-'+id);return el?el.value.tr
 function getBookingFromForm(){
   const providerName=gv('providerName'),providerConf=gv('providerConf');
   const providerPhone=gv('providerPhone'),providerWeb=gv('providerWeb');
-  const bookedVia=gv('bookedVia')||providerName;
-  const agentBookingNum=gv('agentBookingNum'),agentPhone=gv('agentPhone'),agentWeb=gv('agentWeb');
+  const bvRaw=gv('bookedVia');
+  const bookedVia=isDirect(bvRaw)?providerName:bvRaw;
+  const agentBookingNum=isDirect(bvRaw)?'':gv('agentBookingNum'),agentPhone=isDirect(bvRaw)?'':gv('agentPhone'),agentWeb=isDirect(bvRaw)?'':gv('agentWeb');
   const booking={providerName,providerConf,providerPhone,providerWeb,bookedVia,agentBookingNum,agentPhone,agentWeb};
   // Save for pre-fill on next leg
   if(providerName||bookedVia){_lastBooking={...booking};}
@@ -2298,9 +2323,14 @@ function validateLeg(type){
 function saveLeg(){
   saveTripHeader();  // always persist header before modifying legs
   const type=pendingLegType;
-  // Validate before saving
+  // Validate before saving — show ALL errors inline in the modal (toast is hidden behind modal)
   var errs=validateLeg(type);
-  if(errs.length>0){showToast(errs[0]);return;}
+  var errBox=document.getElementById('leg-modal-err');
+  if(errs.length>0){
+    if(errBox){errBox.innerHTML=errs.map(function(e){return '&bull; '+e;}).join('<br>');errBox.style.display='block';errBox.scrollIntoView({block:'nearest'});}
+    return;
+  }
+  if(errBox){errBox.style.display='none';}
   let legs=[];
   if(type==='hotel'){
     // Split hotel into check-in and check-out legs
@@ -2457,11 +2487,14 @@ window.showTrips=showTrips;
 
 async function openTrip(tripId){
   if(!window._db||!window._auth.currentUser)return;
+  document.getElementById('travel-header-title').textContent='Opening…';
+  document.getElementById('travel-content').innerHTML='<div class="content"><div class="no-data"><i class="ti ti-loader"></i>Opening itinerary…</div></div>';
   const docKey=window._auth.currentUser.uid+'_trip_'+tripId;
   try{
     const snap=await window._getDoc(window._doc(window._db,'trips',docKey));
     if(snap.exists()){currentTrip=snap.data();renderTripForm(true);}
-  }catch(e){showToast('Error loading trip');}
+    else{showToast('Trip not found');showTrips(tripView==='completed'?'completed':'active');}
+  }catch(e){showToast('Error loading trip');showTrips(tripView==='completed'?'completed':'active');}
 }
 window.openTrip=openTrip;
 
@@ -2685,10 +2718,13 @@ function generatePDF(){
         checkPage(35);
 
         if(leg.type==='flight'){
-          // Line 1: Airline, Flight No., Provider Conf
+          // Line 1: Airline + Flight No. (left), Airline reservation/conf (right-justified)
           setFont(10,true,'#1a1a1a');
-          var line1=(leg.airline||'')+(leg.flightNum?' - Flt '+(leg.flightNum):'')+(leg.providerConf?' - Conf: '+(leg.providerConf):'');
-          doc.text(line1.substring(0,70),LI,y);y+=5;
+          var line1=(leg.airline||'')+(leg.flightNum?' - Flt '+(leg.flightNum):'');
+          doc.text(line1.substring(0,50),LI,y);
+          var flConf=leg.providerConf||leg.confNum||'';
+          if(flConf){setFont(9,true,'#1B2A4A');doc.text('Conf: '+flConf,M+pw,y,{align:'right'});}
+          y+=5;
 
           // Line 2: Booking info
           if(leg.bookedVia||leg.providerName){
@@ -2723,8 +2759,8 @@ function generatePDF(){
           // Time
           setFont(8,true,'#777777');doc.text('Time',LI,y);doc.text('Time',RC,y);
           setFont(9,false,'#1a1a1a');
-          doc.text(leg.departTime||'-',LI+18,y);
-          doc.text(leg.arriveTime||'-',RC+18,y);y+=5;
+          doc.text(to12h(leg.departTime)||'-',LI+18,y);
+          doc.text(to12h(leg.arriveTime)||'-',RC+18,y);y+=5;
 
           // Layover
           if(leg.layover){
@@ -2754,8 +2790,8 @@ function generatePDF(){
 
           setFont(8,true,'#777777');doc.text('Time',LI,y);doc.text('Time',RC,y);
           setFont(9,false,'#1a1a1a');
-          doc.text(leg.departTime||'-',LI+18,y);
-          doc.text(leg.arriveTime||'-',RC+18,y);y+=5;
+          doc.text(to12h(leg.departTime)||'-',LI+18,y);
+          doc.text(to12h(leg.arriveTime)||'-',RC+18,y);y+=5;
         }
 
       // ── SINGLE COLUMN LEGS ─────────────────────────────────
@@ -2778,7 +2814,7 @@ function generatePDF(){
             doc.text((leg.hotelName||'Hotel')+' - '+(isOut?'CHECK-OUT':'CHECK-IN'),LI,y);y+=5;
             if(leg.address)row('Address',leg.address);
             row('Conf.',leg.providerConf||leg.confNum||'');
-            if(!isOut){row('Check-in',leg.checkinTime||'3:00 PM');if(leg.roomType)row('Room',leg.roomType);}
+            if(!isOut){row('Check-in',to12h(leg.checkinTime)||'3:00 PM');if(leg.roomType)row('Room',leg.roomType);}
             else{row('Check-out','11:00 AM');}
             if(leg.bookedVia||leg.providerName){
               setFont(8,false,'#555555');
@@ -2787,13 +2823,13 @@ function generatePDF(){
             break;
           case 'drive':
             row('From',leg.from);row('To',leg.to);
-            row('Depart',leg.departTime);if(leg.duration)row('Est.',leg.duration);
+            row('Depart',to12h(leg.departTime));if(leg.duration)row('Est.',leg.duration);
             if(leg.notes)row('Notes',leg.notes);
             if(leg.providerName)row('Via',leg.providerName);
             break;
           case 'rideshare':
             row('Mode',leg.mode||'Rideshare');row('From',leg.from);row('To',leg.to);
-            row('Pickup',leg.pickupTime);if(leg.duration)row('Est.',leg.duration+' min');
+            row('Pickup',to12h(leg.pickupTime));if(leg.duration)row('Est.',leg.duration+' min');
             if(leg.bookedVia||leg.providerName)row('Booked via',leg.bookedVia||leg.providerName);
             break;
           case 'rental':
@@ -2801,7 +2837,7 @@ function generatePDF(){
             setFont(10,true,'#1a1a1a');
             doc.text((leg.company||'Rental')+(isRet?' - RETURN':' - PICKUP')+(leg.carType?' ('+leg.carType+')':''),LI,y);y+=5;
             row('Address',leg.address);row('Conf.',leg.providerConf||leg.confNum||'');
-            row(isRet?'Return':'Pickup',isRet?(leg.returnTime||'TBD'):(leg.pickupTime||'TBD'));
+            row(isRet?'Return':'Pickup',isRet?(to12h(leg.returnTime)||'TBD'):(to12h(leg.pickupTime)||'TBD'));
             if(leg.bookedVia||leg.providerName){
               setFont(8,false,'#555555');
               doc.text('Booked via: '+(leg.bookedVia||leg.providerName),LI,y);y+=5;
@@ -2809,20 +2845,20 @@ function generatePDF(){
             break;
           case 'transit':
             setFont(10,true,'#1a1a1a');doc.text((leg.city||'Transit')+(leg.line?' - '+leg.line:''),LI,y);y+=5;
-            row('From',leg.from);row('To',leg.to);row('Time',leg.departTime);
+            row('From',leg.from);row('To',leg.to);row('Time',to12h(leg.departTime));
             if(leg.notes)row('Notes',leg.notes);
             break;
           case 'restaurant':
             setFont(10,true,'#1a1a1a');doc.text(leg.name||'Restaurant',LI,y);y+=5;
             if(leg.address)row('Address',leg.address);
-            row('Time',leg.resTime);row('Party',leg.partySize);
+            row('Time',to12h(leg.resTime));row('Party',leg.partySize);
             row('Res.',leg.providerConf||leg.resNum||'');
             if(leg.bookedVia||leg.providerName)row('Booked via',leg.bookedVia||leg.providerName);
             break;
           case 'activity':
             setFont(10,true,'#1a1a1a');doc.text(leg.name||'Activity',LI,y);y+=5;
             if(leg.address)row('Location',leg.address);
-            row('Time',leg.startTime);
+            row('Time',to12h(leg.startTime));
             row('Conf.',leg.providerConf||leg.confNum||'');
             if(leg.notes)row('Notes',leg.notes);
             if(leg.bookedVia||leg.providerName)row('Booked via',leg.bookedVia||leg.providerName);
